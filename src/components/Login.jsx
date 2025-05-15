@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -8,9 +9,31 @@ function Login() {
 
     const navigate = useNavigate();
   
-    const onLogin = () => {
+    const onLogin = async (e) => {
       // Aquí va la lógica de inicio de sesión
-      console.log("Iniciar sesión con:", email, password);
+      e.preventDefault();
+      try{
+        const res = await axios.post('http://localhost:3001/usuarios/login',{
+          "email":email,
+          "password":password
+        });
+        console.log("respuesta",res.data);
+
+        if(res.data.length>0){
+          console.log("usuario logueado");
+          // alert('Token recibido: '+res.data.token);
+          localStorage.setItem('token',res.data);
+          window.location.href ='/Dashboard';
+        }else{
+          console.log("no existe el usuario");
+          
+        }
+
+        
+      }catch(error){
+        console.error(error)
+        alert('Error en el Inicio de Sesion')
+      }
     };
   
     const togglePasswordVisibility = () => {
@@ -45,7 +68,7 @@ function Login() {
           <label className="block text-gray-700 font-semibold mb-1">
             Correo
           </label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.tarvalue)} className="w-full px-4 py-2 bor rounded-lg shadow-sm focus:rin focus:ring-red-600 focus:outline-n transition" placeholder="Ingrese su correo"/>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-2 bor rounded-lg shadow-sm focus:rin focus:ring-red-600 focus:outline-n transition" placeholder="Ingrese su correo"/>
         </div>
 
         {/* Contraseña */}
