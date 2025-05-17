@@ -63,17 +63,136 @@ function App() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-700">{asesor.nombre}</h3>
-                <p className="text-sm text-gray-500">{asesor.especialidad}</p>
+                <p className="text-sm text-gray-500">{asesor.materia}</p>
                 <button className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">
                   Contactar
                 </button>
               </div>
             ))}
           </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+  {/* Mensajes */}
+  <div className="bg-white p-6 rounded-xl shadow-md">
+  {/* Barra de fechas */}
+  <div className="flex justify-center items-center space-x-8 border-b border-black/20 pb-4 mb-6 text-center text-gray-400 font-semibold text-sm select-none">
+    <div>
+      <p className="text-cyan-500 font-bold text-lg">14</p>
+      <p>April</p>
+    </div>
+    <div>
+      <p className="text-gray-400 font-normal text-lg">16</p>
+      <p>April</p>
+    </div>
+  </div>
+
+  {/* Lista de mensajes */}
+  <div>
+    {[
+      { name: "Mary Frye", message: "Hey! I'm available...", time: "Just Now" },
+      { name: "David Smith", message: "I've finished it! See you soon.", time: "11:42am" },
+      { name: "Troy Long", message: "This theme is awesome!", time: "01:56pm" }
+    ].map((msg, i) => (
+      <div key={i} className={`flex items-center justify-between py-4 border-b border-black/20 ${i === 2 ? 'border-0' : ''}`}>
+        <div className="flex items-center gap-4">
+          {/* Avatar con inicial */}
+          <div className="w-10 h-10 bg-cyan-500 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
+            {msg.name.charAt(0)}
+          </div>
+          <div>
+            <p className="text-gray-800 font-medium">{msg.name}</p>
+            <p className="text-sm text-gray-500">{msg.message}</p>
+          </div>
+        </div>
+        <span className="text-xs text-gray-400">{msg.time}</span>
+      </div>
+    ))}
+
+    <button className="mt-4 text-white bg-cyan-500 hover:bg-cyan-600 px-4 py-2 rounded-full text-sm">
+      Load more
+    </button>
+  </div>
+</div>
+
+
+  {/* Timeline */}
+  <div className="bg-white p-6 rounded-xl shadow-md">
+    <h3 className="text-gray-800 font-semibold mb-4">Por desarrollar</h3>
+    <div className="space-y-4 text-sm">
+      <div>
+        <p className="text-cyan-600 font-medium">Now</p>
+        <p className="text-gray-600">
+          Andrei Coman magna sed porta finibus, risus posted a new article:{" "}
+          <span className="text-cyan-500 hover:underline cursor-pointer">Forget UX Rowland</span>
+        </p>
+      </div>
+      <div>
+        <p className="text-cyan-600 font-medium">Yesterday</p>
+        <p className="text-gray-600">
+          Andrei Coman posted a new article:{" "}
+          <span className="text-cyan-500 hover:underline cursor-pointer">Designer Alex</span>
+        </p>
+      </div>
+      <div>
+        <p className="text-cyan-600 font-medium">2:30PM</p>
+        <p className="text-gray-600">
+          Zack Wetas commented:{" "}
+          <span className="text-cyan-500 hover:underline cursor-pointer">Developer Moreno</span>
+        </p>
+      </div>
+      <div>
+        <p className="text-cyan-600 font-medium">12:48PM</p>
+        <p className="text-gray-600">
+          Zack & Chris commented:{" "}
+          <span className="text-cyan-500 hover:underline cursor-pointer">UX Murphy</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* Redes sociales (ambas dentro de un contenedor) */}
+  <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
+    <h3 className="text-gray-800 font-semibold mb-4">Por desarrollar</h3>
+    {[
+      {
+        name: "Facebook",
+        count: "8.625K",
+        color: "text-blue-600",
+        bg: "bg-blue-600",
+        icon: (
+          <path d="M22 12a10 10 0 10-11.78 9.88v-7H8v-3h2.22V9.5c0-2.2 1.3-3.42 3.3-3.42.96 0 1.97.17 1.97.17v2.17H14.9c-1.1 0-1.44.69-1.44 1.4V12h2.45l-.39 3h-2.06v7A10 10 0 0022 12z" />
+        )
+      },
+      {
+        name: "Twitter",
+        count: "125.3K",
+        color: "text-blue-400",
+        bg: "bg-blue-400",
+        icon: (
+          <path d="M23 3a10.9 10.9 0 01-3.14 1.53A4.48 4.48 0 0022.4.36a9.15 9.15 0 01-2.88 1.1A4.52 4.52 0 0016.11 0c-2.5 0-4.51 2.17-4.51 4.84 0 .38.04.75.12 1.1-3.75-.2-7.07-2.07-9.29-4.9A5.07 5.07 0 001.64 3.5c0 1.68.83 3.17 2.1 4.04a4.48 4.48 0 01-2.05-.58v.06c0 2.35 1.6 4.3 3.72 4.75a4.52 4.52 0 01-2.03.08c.57 1.86 2.24 3.21 4.22 3.25A9.08 9.08 0 010 19.54 12.79 12.79 0 006.92 21c8.29 0 12.84-7.24 12.84-13.52 0-.21 0-.43-.02-.64A9.14 9.14 0 0023 3z" />
+        )
+      }
+    ].map((platform, i) => (
+      <div key={i} className="flex flex-col items-center text-center justify-center">
+        <svg className={`w-8 h-8 ${platform.color} mb-2`} fill="currentColor" viewBox="0 0 24 24">
+          {platform.icon}
+        </svg>
+        <h4 className={`text-xl font-bold ${platform.color}`}>{platform.count}</h4>
+        <p className="text-gray-500 text-sm">New Peoples</p>
+        <p className="text-gray-400 text-xs">Your main list is growing</p>
+        <button className={`mt-2 text-white ${platform.bg} hover:brightness-110 px-3 py-1 rounded-full text-sm`}>
+          Following you
+        </button>
+      </div>
+    ))}
+  </div>
+</div>
+
         </main>
       </div>
     </div>
+    
   )
 }
+
 
 export default App
