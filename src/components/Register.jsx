@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-//import axios from "axios";
+import axios from "axios";
 
 function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -67,24 +67,25 @@ function Register() {
   };
 
   const handleChange = (e) => {
-    console.log("gikaaa");
-
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     console.log(name);
     validarCampo(name, value); // validar en tiempo real
   };
 
-  //const onRegister = async (e) => {
-    //e.preventDefault();
-    //try {
-      //const res = await axios.post("", formData);
-      //alert("Usuario registrado correctamente");
-    //} catch (err) {
-      //console.err(err);
-      //alert("Error al registrar");
-    //}
-  //};
+  const onRegister = async (e) => {
+    e.preventDefault();
+    try {
+      console.log("enviar",formData);
+  
+      const res = await axios.post('http://localhost:3001/usuarios/addUser',formData);
+      console.log("respuesta",res.data);
+      alert(res.data.mensaje);
+    } catch (err) {
+      console.err(err);
+      alert("Error al registrar");
+    }
+  };
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
@@ -182,7 +183,7 @@ function Register() {
               <input
                 list="rolesgenerales"
                 type="text"
-                name="rol"
+                name="roles"
                 id="roles"
                 value={formData.roles}
                 onChange={handleChange}
@@ -306,7 +307,7 @@ function Register() {
         </div>
 
         {/* Botones de login */}
-        <button className="w-full bg-red-600 text-white font-semibold py-2 rounded-lg shadow-md hover:bg-red-500 transition cursor-pointer">
+        <button onClick={onRegister} className="w-full bg-red-600 text-white font-semibold py-2 rounded-lg shadow-md hover:bg-red-500 transition cursor-pointer">
           Registrarme
         </button>
 
