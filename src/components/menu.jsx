@@ -13,13 +13,11 @@ function Menu() {
       { label: "Inicio", href: "/Dashboard" },
       { label: "Asesorias", href: "/Asesor" },
       { label: "Foro de la Comunidad", href: "/Forum" },
-      { label: "Acerca de Nosotros", href: "/Contactos" },
     ];
   } else {
     menuItems = [
       { label: "Inicio", href: "/Dashboard" },
       { label: "Foro de la comunidad", href: "/Forum" },
-      { label: "Acerca de Nosotros", href: "/Contactos" },
       { label: "Chats", href: "/Chatstudy" },
     ];
   }

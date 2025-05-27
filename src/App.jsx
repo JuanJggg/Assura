@@ -9,7 +9,7 @@ import {useNavigate} from "react-router-dom";
 
 function App() {
     const navigate = useNavigate();
-
+    const usuario = JSON.parse(localStorage.getItem("token"))?.[0];
     const [asesores, setAsesores] = useState([]);
     const [comentario, setComentario] = useState([]);
 
@@ -44,6 +44,14 @@ function App() {
             month: "long",
             year: "numeric",
         });
+    };
+
+    const handleClick = () => {
+        if (usuario.rol === "Asesor") {
+            navigate("/Asesor");
+        } else {
+            navigate("/Chatstudy");
+        }
     };
 
 
@@ -93,6 +101,7 @@ function App() {
                                 <p className="text-sm text-gray-500">{asesor.telefono}</p>
                                 <p className="text-sm text-gray-500">{asesor.materia}</p>
                                 <button
+                                    onClick={handleClick}
                                     className="mt-4 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">
                                     Contactar
                                 </button>
