@@ -4,6 +4,7 @@ import Header from "./../header";
 
 import SubjectRegistration from "./SubjectRegistration";
 import MateriaRegistration from "./MateriaRegistration";
+import Chatbot from "./Chatbot";
 
 function Register() {
     const [currentPage, setCurrentPage] = useState('asesoria');
@@ -15,6 +16,8 @@ function Register() {
                 return <MateriaRegistration/>;
             case 'asesoria':
                 return <SubjectRegistration/>;
+            case 'chat':
+                return <Chatbot/>;
         }
     };
 
@@ -36,7 +39,7 @@ function Register() {
                                     onClick={() => setCurrentPage('asesoria')}
                                     className={`mr-4 py-2 px-4 rounded-md transition-colors duration-200 ${
                                         currentPage === 'asesoria'
-                                            ? 'bg-indigo-500 text-white font-semibold'
+                                            ? 'bg-red-600 text-white font-semibold'
                                             : 'text-gray-600 hover:bg-indigo-100'
                                     }`}
                                 >
@@ -46,11 +49,20 @@ function Register() {
                                     onClick={() => setCurrentPage('materia')}
                                     className={`mr-4 py-2 px-4 rounded-md transition-colors duration-200 ${
                                         currentPage === 'materia'
-                                            ? 'bg-indigo-500 text-white font-semibold'
+                                            ? 'bg-red-600 text-white font-semibold'
                                             : 'text-gray-600 hover:bg-indigo-100'
                                     }`}
                                 >
                                     Materias
+                                </button>
+                                <button 
+                                    onClick={() => setCurrentPage('chat')}
+                                    className={`mr-4 py-2 px-4 rounded-md transition-colors duration-200 ${
+                                        currentPage === 'chat'
+                                            ? 'bg-red-600 text-white font-semibold'
+                                            : 'text-gray-600 hover:bg-indigo-100'
+                                    }`}>
+                                    Chats
                                 </button>
 
                             </div>

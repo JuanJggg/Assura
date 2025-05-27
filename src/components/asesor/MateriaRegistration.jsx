@@ -107,7 +107,7 @@ function MateriaRegistration() {
                         placeholder="Ej: Cálculo Diferencial"
                         className={`w-full px-4 py-3 rounded-lg border ${
                             errors.materia ? 'border-red-500' : 'border-gray-300'
-                        } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors`}
+                        } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
                     />
                     {errors.materia && (
                         <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -120,7 +120,7 @@ function MateriaRegistration() {
                 <div className="flex justify-end">
                     <button
                         type="submit"
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors flex items-center"
+                        className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-sm hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors flex items-center"
                     >
                         <PlusCircle className="w-5 h-5 mr-2"/>
                         Agregar Materia

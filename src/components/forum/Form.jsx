@@ -111,7 +111,7 @@ const Form = () => {
                 </h1>
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105"
+                    className="bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-300 transform hover:scale-105"
                 >
                     {showForm ? "Cancelar" : "Nuevo Foro"}
                 </button>
@@ -136,10 +136,10 @@ const Form = () => {
                             onClick={() => setSelectedTopic(selectedTopic?.id === topic.id ? null : topic)}
                         >
                             <div className="flex justify-between items-start">
-                                <h3 className="text-lg font-semibold text-indigo-600 hover:text-indigo-800 transition-colors duration-200 cursor-pointer">
+                                <h3 className="text-lg font-semibold text-red-600 hover:text-red-800 transition-colors duration-200 cursor-pointer">
                                     {topic.titulo}
                                 </h3>
-                                <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full">
+                                <span className="bg-indigo-100 text-red-800 text-xs px-2 py-1 rounded-full">
                 {topic.comentarios}{" "}
                                     {topic.comentarios === 1 ? "respuesta" : "respuestas"}
               </span>

@@ -16,7 +16,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
     });
 
     const [errors, setErrors] = useState({});
-    const [submitStatus, setSubmitStatus] = useState('idle');
+    const [setSubmitStatus] = useState('idle');
 
     const validateForm = () => {
         const newErrors = {};
@@ -92,7 +92,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                         name="materia"
                         value={formData.materia}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-600 focus:border-red-600"
                     >
                         <option value={''} disabled={true}>Seleccione una opción</option>
                         {categories.map((category) => (
@@ -114,7 +114,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                         value={formData.descripcion}
                         onChange={handleChange}
                         rows={3}
-                        className={`w-full px-3 py-2 border ${errors.descripcion ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+                        className={`w-full px-3 py-2 border ${errors.descripcion ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-red-600 focus:border-red-600`}
                         placeholder="Describe brevemente el contenido y temas que puedes asesorar en esta materia"
                     ></textarea>
                     {errors.descripcion && <p className="mt-1 text-sm text-red-600">{errors.descripcion}</p>}
@@ -136,7 +136,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                                 value={formData.precio_hora || ''}
                                 onChange={handleChange}
                                 min="0"
-                                className={`w-full pl-7 pr-3 py-2 border ${errors.precio_hora ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+                                className={`w-full pl-7 pr-3 py-2 border ${errors.precio_hora ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-red-600 focus:border-red-600`}
                                 placeholder="0"
                             />
                         </div>
@@ -158,7 +158,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                                 value={formData.precio_sesion || ''}
                                 onChange={handleChange}
                                 min="0"
-                                className={`w-full pl-7 pr-3 py-2 border ${errors.precio_sesion ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500`}
+                                className={`w-full pl-7 pr-3 py-2 border ${errors.precio_sesion ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-red-600 focus:border-red-600`}
                                 placeholder="0"
                             />
                         </div>
@@ -179,7 +179,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                             onChange={handleChange}
                             className={`w-full px-4 py-3 rounded-lg border ${
                                 errors.hora_inicial ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors`}
+                            } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
                         />
                         {errors.hora_inicial && (
                             <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -201,7 +201,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                             onChange={handleChange}
                             className={`w-full px-4 py-3 rounded-lg border ${
                                 errors.hora_final ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors`}
+                            } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
                         />
                         {errors.hora_final && (
                             <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -229,7 +229,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                             <label
                                 htmlFor="activa"
                                 className={`toggle-bg block overflow-hidden h-6 rounded-full cursor-pointer ${
-                                    formData.activa ? 'bg-indigo-500' : 'bg-gray-300'
+                                    formData.activa ? 'bg-red-600' : 'bg-gray-300'
                                 }`}
                             >
                             <span
@@ -244,7 +244,7 @@ function SubjectForm({onSubmit, initialData, categories}) {
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                     <button
                         type="submit"
-                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
+                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 transition-colors duration-200"
                     >
                         {initialData ? 'Actualizar Materia' : 'Guardar Materia'}
                     </button>
