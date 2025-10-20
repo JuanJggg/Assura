@@ -9,7 +9,7 @@ import {useNavigate} from "react-router-dom";
 
 function App() {
     const navigate = useNavigate();
-
+    const usuario = JSON.parse(localStorage.getItem("token"))?.[0];
     const [asesores, setAsesores] = useState([]);
     const [comentario, setComentario] = useState([]);
 
@@ -24,6 +24,7 @@ function App() {
             console.log("respuesta ase", res.data);
             setAsesores(res.data);
         } catch (err) {
+            console.log("Error al registrar", err);
             alert("Error al registrar");
         }
     }
@@ -34,6 +35,7 @@ function App() {
             console.log("respuesta ase", res.data);
             setComentario(res.data);
         } catch (err) {
+            console.log("Error al registrar", err);
             alert("Error al registrar");
         }
     }
@@ -44,6 +46,14 @@ function App() {
             month: "long",
             year: "numeric",
         });
+    };
+
+    const handleClick = () => {
+        if (usuario.rol === "Asesor") {
+            navigate("/Asesor");
+        } else {
+            navigate("/Chatstudy");
+        }
     };
 
 
@@ -93,7 +103,8 @@ function App() {
                                 <p className="text-sm text-gray-500">{asesor.telefono}</p>
                                 <p className="text-sm text-gray-500">{asesor.materia}</p>
                                 <button
-                                    className="mt-4 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">
+                                    onClick={handleClick}
+                                    className="mt-4 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline">
                                     Contactar
                                 </button>
                             </div>
@@ -118,7 +129,7 @@ function App() {
                                         <div className="flex items-center gap-4">
                                             {/* Avatar con inicial */}
                                             <div
-                                                className="w-10 h-10 bg-indigo-500 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
+                                                className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
                                                 {msg.usuario.charAt(0)}
                                             </div>
                                             <div>
@@ -132,17 +143,17 @@ function App() {
 
                                 <button
                                     onClick={() => navigate('/Forum')}
-                                    className="mt-4 text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-full text-sm">
+                                    className="mt-4 text-white bg-red-600 hover:bg-red-500 px-4 py-2 rounded-full text-sm cursor-pointer">
                                     Ver mas
                                 </button>
                             </div>
                         </div>
 
                         <div className="bg-white p-6 rounded-xl shadow-md">
-                            <h3 className="text-gray-800 font-semibold mb-4">Por desarrollar</h3>
+                            <h3 className="text-gray-800 font-semibold mb-4">Comentarios destacados</h3>
                             <div className="space-y-4 text-sm">
                                 <div>
-                                    <p className="text-indigo-600 font-medium">Now</p>
+                                    <p className="text-red-600 font-medium">Now</p>
                                     <p className="text-gray-600">
                                         Andrei Coman magna sed porta finibus, risus posted a new article:{" "}
                                         <span
@@ -150,7 +161,7 @@ function App() {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-indigo-600 font-medium">Yesterday</p>
+                                    <p className="text-red-600 font-medium">Yesterday</p>
                                     <p className="text-gray-600">
                                         Andrei Coman posted a new article:{" "}
                                         <span
@@ -158,7 +169,7 @@ function App() {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-indigo-600 font-medium">2:30PM</p>
+                                    <p className="text-red-600 font-medium">2:30PM</p>
                                     <p className="text-gray-600">
                                         Zack Wetas commented:{" "}
                                         <span
@@ -166,7 +177,7 @@ function App() {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-indigo-600 font-medium">12:48PM</p>
+                                    <p className="text-red-600 font-medium">12:48PM</p>
                                     <p className="text-gray-600">
                                         Zack & Chris commented:{" "}
                                         <span className="text-cyan-500 hover:underline cursor-pointer">UX Murphy</span>
@@ -177,11 +188,10 @@ function App() {
 
                         {/* Redes sociales*/}
                         <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
-                            <h3 className="text-gray-800 font-semibold mb-4">Por desarrollar</h3>
+                            <h3 className="text-gray-800 font-semibold mb-4">Redes Sociales</h3>
                             {[
                                 {
                                     name: "Facebook",
-                                    count: "8.625K",
                                     color: "text-blue-600",
                                     bg: "bg-blue-600",
                                     icon: (
@@ -191,7 +201,6 @@ function App() {
                                 },
                                 {
                                     name: "X",
-                                    count: "125.3K",
                                     color: "text-gray-800",
                                     bg: "bg-gray-800",
                                     icon: (
@@ -209,7 +218,7 @@ function App() {
                                     <p className="text-gray-500 text-sm">New Peoples</p>
                                     <p className="text-gray-400 text-xs">Your main list is growing</p>
                                     <button
-                                        className="mt-2 text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded-full text-sm">
+                                        className="mt-2 text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded-full text-sm cursor-pointer">
                                         Following you
                                     </button>
                                 </div>
@@ -219,7 +228,7 @@ function App() {
 
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="bg-white p-6 rounded-xl shadow-md">
-                            <h3 className="text-xl font-semibold text-gray-800 mb-4">POR DESARROLLAR</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-4">Tabla de Comentarios</h3>
 
                             <div
                                 className="grid grid-cols-12 gap-2 border-b pb-3 mb-3 text-sm font-medium text-gray-600">
@@ -240,7 +249,7 @@ function App() {
                                     <div className="col-span-3 flex items-center gap-2">
                                         <div
                                             className="w-8 h-8 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500"
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600"
                                                  viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd"
                                                       d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
@@ -255,7 +264,7 @@ function App() {
                         className={`px-2 py-1 rounded-full text-xs font-medium ${tarea.priority === 'High' ? 'bg-red-100 text-red-600' :
                             tarea.priority === 'Medium' ? 'bg-green-100 text-green-600' :
                                 tarea.priority === 'Low' ? 'bg-orange-100 text-orange-600' :
-                                    'bg-blue-100 text-blue-600'
+                                    'bg-blue-100 text-red-600'
                         }`}>
                       {tarea.priority}
                     </span>
@@ -265,7 +274,7 @@ function App() {
                         </div>
 
                         <div className="bg-white p-6 rounded-xl shadow-md">
-                            <h3 className="text-xl font-semibold text-gray-800 mb-4">POR DESARROLLAR</h3>
+                            <h3 className="text-xl font-semibold text-gray-800 mb-4">Tabla de Comentarios</h3>
                             <div
                                 className="grid grid-cols-12 gap-2 border-b pb-3 mb-3 text-sm font-medium text-gray-600">
                                 <div className="col-span-1"></div>
@@ -285,7 +294,7 @@ function App() {
                                     <div className="col-span-3 flex items-center gap-2">
                                         <div
                                             className="w-8 h-8 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500"
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-600"
                                                  viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd"
                                                       d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
@@ -300,7 +309,7 @@ function App() {
                         className={`px-2 py-1 rounded-full text-xs font-medium ${tarea.priority === 'High' ? 'bg-red-100 text-red-600' :
                             tarea.priority === 'Medium' ? 'bg-green-100 text-green-600' :
                                 tarea.priority === 'Low' ? 'bg-red-100 text-red-600' :
-                                    'bg-blue-100 text-blue-600'
+                                    'bg-blue-100 text-red-600'
                         }`}>
                       {tarea.priority}
                     </span>

@@ -7,6 +7,7 @@ import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import Forum from './components/forum/Register.jsx'
 import RegisterAsesor from './components/asesor/Register.jsx'
+import Chatbot from './components/chate/Chatstudy.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/Register" element={<Register />} />
         <Route path="/Forum" element={<Forum />} />
         <Route path="/Asesor" element={<RegisterAsesor />} />
+        <Route path="/Chatstudy" element={<Chatbot />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

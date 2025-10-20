@@ -80,7 +80,7 @@ function SubjectList({subjects, onEdit, onDelete, onToggleActive}) {
                                 onClick={() => setFilterActive(null)}
                                 className={`px-3 py-2 text-sm border ${
                                     filterActive === null
-                                        ? 'bg-indigo-500 text-white border-indigo-500'
+                                        ? 'bg-red-600 text-white border-red-600'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 } rounded-l-md`}
                             >
@@ -90,7 +90,7 @@ function SubjectList({subjects, onEdit, onDelete, onToggleActive}) {
                                 onClick={() => setFilterActive(true)}
                                 className={`px-3 py-2 text-sm border-t border-b ${
                                     filterActive === true
-                                        ? 'bg-indigo-500 text-white border-indigo-500'
+                                        ? 'bg-red-600 text-white border-red-600'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 }`}
                             >
@@ -100,7 +100,7 @@ function SubjectList({subjects, onEdit, onDelete, onToggleActive}) {
                                 onClick={() => setFilterActive(false)}
                                 className={`px-3 py-2 text-sm border ${
                                     filterActive === false
-                                        ? 'bg-indigo-500 text-white border-indigo-500'
+                                        ? 'bg-red-600 text-white border-red-600'
                                         : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                 } rounded-r-md`}
                             >
@@ -126,7 +126,7 @@ function SubjectList({subjects, onEdit, onDelete, onToggleActive}) {
                                          {subject.activa === 'S' ? 'Activa' : 'Inactiva'}
                                        </span>
                                         <span
-                                            className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-red-600">
                       {subject.materia}
                     </span>
                                     </div>
@@ -148,7 +148,7 @@ function SubjectList({subjects, onEdit, onDelete, onToggleActive}) {
                                     <div className="flex space-x-2">
                                         <button
                                             onClick={() => onEdit(subject)}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors duration-200"
+                                            className="p-2 text-red-600 hover:bg-red-500 rounded-full transition-colors duration-200"
                                             title="Editar"
                                         >
                                             <Edit className="h-5 w-5"/>

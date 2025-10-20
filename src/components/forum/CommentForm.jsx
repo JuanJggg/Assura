@@ -32,7 +32,7 @@ const CommentForm = ({ onSubmit, onCancel }) => {
           rows={3}
           className={`w-full px-4 py-2 rounded-md border ${
             error ? 'border-red-500' : 'border-gray-300'
-          } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+          } focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent`}
         />
         {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
       </div>
@@ -49,7 +49,7 @@ const CommentForm = ({ onSubmit, onCancel }) => {
         )}
         <button
           type="submit"
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700"
+          className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50 transition-colors duration-200"
         >
           Comentar
         </button>

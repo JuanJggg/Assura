@@ -124,7 +124,7 @@ function SubjectRegistration() {
                         setEditingSubject(null);
                         setShowForm(!showForm);
                     }}
-                    className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                 >
                     {showForm ? 'Cancelar' : 'Agregar Asesoría'}
                 </button>
