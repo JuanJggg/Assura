@@ -8,6 +8,8 @@ import Register from './components/Register.jsx';
 import Forum from './components/forum/Register.jsx'
 import RegisterAsesor from './components/asesor/Register.jsx'
 import Chatbot from './components/chate/Chatstudy.jsx'
+import Password from './components/Password.jsx';
+import ResetPassword from './components/Resetpassword.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -19,6 +21,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/Forum" element={<Forum />} />
         <Route path="/Asesor" element={<RegisterAsesor />} />
         <Route path="/Chatstudy" element={<Chatbot />} />
+        <Route path="/ForgotPassword" element={<Password />} />
+        <Route path="/ResetPassword/:token" element={<ResetPassword />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

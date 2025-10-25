@@ -130,7 +130,7 @@ function App() {
                                             {/* Avatar con inicial */}
                                             <div
                                                 className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
-                                                {msg.usuario.charAt(0)}
+                                                {msg.usuario ? msg.usuario.charAt(0) : '?'}
                                             </div>
                                             <div>
                                                 <p className="text-gray-800 font-medium">{msg.usuario}</p>

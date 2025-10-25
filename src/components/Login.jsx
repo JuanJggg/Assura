@@ -19,13 +19,14 @@ function Login() {
             });
             console.log("respuesta", res.data);
 
-            if (res.data.length > 0) {
+            if (res.data.ok) {
                 console.log("usuario logueado");
                 // alert('Token recibido: '+res.data.token);
-                localStorage.setItem('token', JSON.stringify(res.data));
+                localStorage.setItem('usuario', JSON.stringify(res.data.usuario));
                 window.location.href = '/Dashboard';
             } else {
                 console.log("no existe el usuario");
+                alert(res.data.mensaje);
 
             }
 
@@ -105,7 +106,8 @@ function Login() {
                             ¿No tienes una cuenta?
                         </p>
                         <span>|</span>
-                        <p className="text-red-600 font-semibold hover:underline cursor-pointer">
+                        <p onClick={() => navigate("/ForgotPassword")}
+                           className="text-red-600 font-semibold hover:underline cursor-pointer">
                             ¿Se te olvidó tu contraseña?
                         </p>
                     </div>

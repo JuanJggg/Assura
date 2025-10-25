@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 
 function Menu() {
-  const usuario = JSON.parse(localStorage.getItem("token"))?.[0];
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
   const navigate = useNavigate();
   const location = useLocation();
   let menuItems;
