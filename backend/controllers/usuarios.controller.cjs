@@ -119,8 +119,6 @@ exports.forgotPassword = async (req, res) => {
       [email]
     );
 
-    let usuario = null;
-
     if (result.rowCount > 0) {
       usuario = result.rows[0];
     }else{
@@ -231,6 +229,7 @@ exports.resetPassword = async (req, res) => {
       [hashedPassword, email]
     );
 
+    // Verificar si el usuario es asesor o estudiante
     if (usuario.rowCount === 0) {
       console.log("Usuario no encontrado en tabla");
 

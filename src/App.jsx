@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-//import { useNavigate } from "react-router-dom";
 import "./App.css";
 import Menu from "./components/menu";
 import Header from "./components/header";
@@ -13,6 +12,8 @@ function App() {
   const [comentario, setComentario] = useState([]);
 
   useEffect(() => {
+    // Debug: Ver qué usuario está logueado
+    console.log("Usuario logueado:", usuario);
     getAsesores();
     getComentarios();
   }, []);
@@ -22,7 +23,7 @@ function App() {
       const res = await axios.post(
         "http://localhost:3001/dasboard/getAsesores"
       );
-      console.log("respuesta ase", res.data);
+      console.log("respuesta asesores", res.data);
       setAsesores(res.data);
     } catch (err) {
       console.log("Error al obtener asesores", err);
@@ -35,11 +36,11 @@ function App() {
       const res = await axios.post(
         "http://localhost:3001/dasboard/getComentario"
       );
-      console.log("respuesta ase", res.data);
+      console.log("respuesta comentarios", res.data);
       setComentario(res.data);
     } catch (err) {
-      console.log("Error al registrar", err);
-      alert("Error al registrar");
+      console.log("Error al obtener comentarios", err);
+      alert("Error al obtener comentarios");
     }
   };
 
@@ -52,25 +53,68 @@ function App() {
   };
 
   const handleClick = async (asesorId) => {
-    if (!usuario) {
-      alert("Debes iniciar sesión");
+    // Verificar si el usuario está logueado
+    if (!usuario || !usuario.id) {
+      alert("Debes iniciar sesión primero");
+      navigate("/login");
       return;
     }
-    console.log(asesorId);
+
+    console.log("=== INICIANDO CREACIÓN DE CONVERSACIÓN ===");
+    console.log("Usuario ID:", usuario.id);
+    console.log("Asesor ID:", asesorId);
+    console.log("Usuario completo:", usuario);
+
+    // Validar que el asesorId exista
+    if (!asesorId) {
+      alert("Error: ID de asesor no válido");
+      return;
+    }
 
     try {
-      // Crear chat inicial en backend
-      const res = await axios.post("http://localhost:3001/chat/crearConversacion", {
-        idUsuario: usuario.id,
-        idAsesor: asesorId,
-        initialMessage: "Hola, quiero contactarte.",
-      });
+      const payload = {
+        id_estudiante: usuario.id,
+        id_asesor: asesorId
+      };
 
-      // Redirigir al Chatstudy y pasar el chatId
-      navigate("/Chatstudy", { state: { chatId: res.data.id } });
+      console.log("Payload a enviar:", payload);
+
+      // Crear o obtener conversación existente
+      const res = await axios.post(
+        "http://localhost:3001/chat/crearConversacion",
+        payload
+      );
+
+      console.log("Respuesta completa del servidor:", res.data);
+
+      if (res.data.ok) {
+        console.log("✅ Conversación creada exitosamente");
+        console.log("ID de conversación:", res.data.conversacion.id);
+        
+        // Redirigir al chat
+        navigate("/Chatstudy", { 
+          state: { 
+            chatId: res.data.conversacion.id,
+            conversacion: res.data.conversacion
+          } 
+        });
+      } else {
+        console.error("❌ Respuesta no exitosa:", res.data);
+        alert("No se pudo crear la conversación");
+      }
     } catch (err) {
-      console.error("Error creando chat", err);
-      alert("No se pudo iniciar el chat");
+      console.error("=== ERROR AL CREAR CONVERSACIÓN ===");
+      console.error("Error completo:", err);
+      console.error("Respuesta del servidor:", err.response?.data);
+      console.error("Status:", err.response?.status);
+      console.error("Headers:", err.response?.headers);
+      
+      // Mostrar mensaje de error más detallado
+      if (err.response?.data?.error) {
+        alert(`Error: ${err.response.data.error}`);
+      } else {
+        alert("No se pudo iniciar el chat. Revisa la consola para más detalles.");
+      }
     }
   };
 
@@ -149,45 +193,60 @@ function App() {
 
         {/* Contenido principal */}
         <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
+          {/* Debug info - Puedes comentar esto después */}
+          {usuario && usuario.id && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
+              <strong>Usuario logueado:</strong> ID: {usuario.id} - {usuario.nombre || usuario.nombres || 'Sin nombre'}
+            </div>
+          )}
+
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">
             Asesores Disponibles
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {asesores.map((asesor, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl cursor-pointer"
-              >
-                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-8 w-8 text-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-700">
-                  {asesor.asesor}
-                </h3>
-                <p className="text-sm text-gray-500">{asesor.telefono}</p>
-                <p className="text-sm text-gray-500">{asesor.materia}</p>
-                <button
-                  onClick={() => handleClick(asesor.id_asesor)}
-                  className="mt-4 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline"
-                >
-                  Contactar
-                </button>
+            {asesores.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-500">No hay asesores disponibles en este momento.</p>
               </div>
-            ))}
+            ) : (
+              asesores.map((asesor, index) => (
+                <div
+                  key={asesor.id_asesor || index}
+                  className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-8 w-8 text-gray-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-700">
+                    {asesor.asesor || "Sin nombre"}
+                  </h3>
+                  <p className="text-sm text-gray-500">{asesor.telefono || "Sin teléfono"}</p>
+                  <p className="text-sm text-gray-500">{asesor.materia || "Sin materia"}</p>
+                  <p className="text-xs text-gray-400 mt-1">ID: {asesor.id_asesor}</p>
+                  <button
+                    onClick={() => handleClick(asesor.id_asesor)}
+                    className="mt-4 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors"
+                  >
+                    Contactar
+                  </button>
+                </div>
+              ))
+            )}
           </div>
+          
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Mensajes */}
             <div className="bg-white p-6 rounded-xl shadow-md">
@@ -202,36 +261,40 @@ function App() {
 
               {/* Lista de mensajes */}
               <div>
-                {comentario.slice(0, 3).map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center justify-between py-4 border-b border-black/20 ${
-                      i === 2 ? "border-0" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {/* Avatar con inicial */}
-                      <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
-                        {msg.usuario ? msg.usuario.charAt(0) : "?"}
+                {comentario.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No hay comentarios aún</p>
+                ) : (
+                  comentario.slice(0, 3).map((msg, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center justify-between py-4 border-b border-black/20 ${
+                        i === 2 ? "border-0" : ""
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Avatar con inicial */}
+                        <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
+                          {msg.usuario ? msg.usuario.charAt(0) : "?"}
+                        </div>
+                        <div>
+                          <p className="text-gray-800 font-medium">
+                            {msg.usuario || "Anónimo"}
+                          </p>
+                          <p className="text-sm text-gray-500">{msg.contenido || ""}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-gray-800 font-medium">
-                          {msg.usuario}
-                        </p>
-                        <p className="text-sm text-gray-500">{msg.contenido}</p>
-                      </div>
+                      <span className="text-xs text-gray-400">
+                        {msg.fecha ? formatDate(new Date(msg.fecha)) : ""}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {formatDate(new Date(msg.fecha))}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
 
                 <button
                   onClick={() => navigate("/Forum")}
-                  className="mt-4 text-white bg-red-600 hover:bg-red-500 px-4 py-2 rounded-full text-sm cursor-pointer"
+                  className="mt-4 text-white bg-red-600 hover:bg-red-500 px-4 py-2 rounded-full text-sm cursor-pointer transition-colors"
                 >
-                  Ver mas
+                  Ver más
                 </button>
               </div>
             </div>
@@ -322,7 +385,7 @@ function App() {
                   <p className="text-gray-400 text-xs">
                     Your main list is growing
                   </p>
-                  <button className="mt-2 text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded-full text-sm cursor-pointer">
+                  <button className="mt-2 text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded-full text-sm cursor-pointer transition-colors">
                     Following you
                   </button>
                 </div>

@@ -1,3 +1,5 @@
+// backend/server/index.cjs
+
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 const express = require("express");
@@ -5,7 +7,6 @@ const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const { guardarMensaje } = require("./controllers/chat.controllers.cjs");
-
 
 const app = express();
 const server = http.createServer(app);
@@ -20,13 +21,12 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// Middleware de logging
 app.use((req, res, next) => {
   console.log("➡️ Petición entrante:", req.method, req.url);
   next();
 });
 
-
-// Rutas API
 const usuariosRoutes = require("./routes/usuarios.routes.cjs");
 app.use("/usuarios", usuariosRoutes);
 
@@ -42,35 +42,65 @@ app.use("/dasboard", dasboardRoutes);
 const chatRoutes = require("./routes/chatroutes.cjs");
 app.use("/chat", chatRoutes);
 
-// WebSockets
 io.on("connection", (socket) => {
-  console.log("Usuario conectado:", socket.id);
+  console.log("✅ Usuario conectado:", socket.id);
+
+  // Unirse a una sala específica (opcional)
+  socket.on("joinRoom", (roomID) => {
+    socket.join(roomID);
+    console.log(`👥 Usuario ${socket.id} se unió a la sala ${roomID}`);
+  });
 
   // Cuando un usuario envía un mensaje
   socket.on("sendMessage", async (data) => {
     try {
-      console.log("Mensaje recibido:", data);
-      await guardarMensaje(data); // guarda en PostgreSQL
-      io.emit("receiveMessage", data); // reenviar a todos
+      console.log("📩 Mensaje recibido:", data);
+      
+      // Guardar en PostgreSQL
+      const mensajeGuardado = await guardarMensaje(data);
+      
+      // Emitir a todos los clientes conectados
+      io.emit("receiveMessage", {
+        ...data,
+        id: mensajeGuardado.id,
+        fecha_envio: mensajeGuardado.fecha_envio
+      });
+      
+      console.log("✅ Mensaje guardado y enviado");
     } catch (err) {
-      console.error("Error al guardar mensaje:", err);
+      console.error("❌ Error al guardar mensaje:", err);
+      socket.emit("error", { message: "Error al enviar mensaje" });
     }
   });
 
-  // Si quieres manejar salas específicas
-  socket.on("joinRoom", (roomID) => {
-    socket.join(roomID);
-    console.log(`Usuario ${socket.id} se unió a la sala ${roomID}`);
-  });
-
+  // Cuando un usuario se desconecta
   socket.on("disconnect", () => {
-    console.log("Usuario desconectado:", socket.id);
+    console.log("❌ Usuario desconectado:", socket.id);
   });
 });
 
+app.get("/", (req, res) => {
+  res.json({ 
+    message: "API de Assura funcionando correctamente",
+    timestamp: new Date().toISOString()
+  });
+});
+
+
+app.use((req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" });
+});
+
+
 const port = process.env.PORT || 3001;
 server.listen(port, () => {
-  console.log(`Servidor corriendo en puerto ${port}`);
+  console.log("╔════════════════════════════════════════╗");
+  console.log("║   🚀 Servidor Assura Iniciado          ║");
+  console.log("╠════════════════════════════════════════╣");
+  console.log(`║   Puerto: ${port.toString().padEnd(28)} ║`);
+  console.log(`║   URL: http://localhost:${port.toString().padEnd(17)} ║`);
+  console.log(`║   WebSocket: Activo                    ║`);
+  console.log("╚════════════════════════════════════════╝");
 });
 
 module.exports = { io };
