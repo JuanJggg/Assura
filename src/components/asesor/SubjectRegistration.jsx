@@ -6,12 +6,13 @@ import '../../App.css';
 import Toast from '../util/alert.jsx';
 
 function SubjectRegistration() {
-    const usuario = JSON.parse(localStorage.getItem("token"))?.[0]; // asegúrate de que existe
+    const usuario = JSON.parse(localStorage.getItem("usuario")) || {}; // asegúrate de que existe
     const [subjects, setSubjects] = useState();
     const [editingSubject, setEditingSubject] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [categories, setCategories] = useState([]);
     const [toast, setToast] = useState(null);
+    console.log("usuario asesoria", usuario);
 
     const handleAddSubject = async (newSubject) => {
 
@@ -32,7 +33,7 @@ function SubjectRegistration() {
             });
             getAsesoria();
         } catch (err) {
-            console.err(err);
+            console.error(err);
             alert("Error al registrar");
         }
 

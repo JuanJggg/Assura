@@ -2,7 +2,7 @@ const pool = require("../config/db.cjs");
 
 exports.getAsesores = async (req, res) => {
     try {
-        const result = await pool.query(`SELECT b.nombre materia, c.nombres || ' ' || c.apellidos asesor, c.telefono
+        const result = await pool.query(`SELECT c.id AS id_asesor, b.nombre materia, c.nombres || ' ' || c.apellidos asesor, c.telefono
                                          FROM public.asesor_materia a
                                                   inner join public.materia b on a.materia_id = b.id
                                                   inner join public.asesor c on c.id = a.asesor_id`);

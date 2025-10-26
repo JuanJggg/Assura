@@ -4,7 +4,7 @@ import {useNavigate} from "react-router-dom";
 
 function Header() {
     const navigate = useNavigate();
-    const usuario = JSON.parse(localStorage.getItem("token"))?.[0]; // asegúrate de que existe
+    const usuario = JSON.parse(localStorage.getItem("usuario")) || {} ; // asegúrate de que existe
 
     const handleLogout = () => {
         localStorage.removeItem("token");

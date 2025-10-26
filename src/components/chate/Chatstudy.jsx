@@ -1,92 +1,119 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Menu from "./../menu";
 import Header from "./../header";
+import axios from "axios";
+import { io } from "socket.io-client";
+
+// Inicializamos socket apuntando al backend real
+const socket = io(`${import.meta.env.VITE_BACKEND_URL}`, {
+  transports: ["websocket", "polling"],
+});
+
+console.log("URL del backend:", import.meta.env.VITE_BACKEND_URL);
 
 function Chatstudy() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState("");
+  const [chats, setChats] = useState([]);
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
-  const [chats, setChats] = useState([
-    {
-      id: 1,
-      name: "Sandra Ortiz",
-      status: "Asesor de Cálculo",
-      lastMessage: "¿Tienes dudas sobre la tarea?",
-      lastMessageTime: "10:30 AM",
-      unreadCount: 2,
-      messages: [
-        {
-          content: "Hola, ¿cómo puedo ayudarte con cálculo?",
-          time: "10:25 AM",
-          isSender: false,
-        },
-        {
-          content: "Tengo dudas sobre derivadas parciales",
-          time: "10:28 AM",
-          isSender: true,
-        },
-        {
-          content: "¿Tienes dudas sobre la tarea?",
-          time: "10:30 AM",
-          isSender: false,
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Miguel Angel",
-      status: "Asesora de Física",
-      lastMessage: "Claro, nos vemos en la sesión",
-      lastMessageTime: "9:45 AM",
-      unreadCount: 0,
-      messages: [
-        {
-          content: "¿Podemos agendar una asesoría?",
-          time: "9:40 AM",
-          isSender: true,
-        },
-        {
-          content: "Claro, nos vemos en la sesión",
-          time: "9:45 AM",
-          isSender: false,
-        },
-      ],
-    },
-  ]);
-
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (message.trim() && selectedChat) {
-      const newMessage = {
-        content: message,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        isSender: true,
-      };
+  // 🔹 Cargar chats reales desde backend al montar el componente
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/chat/crearConversacion`,{
+            id_estudiante: 1,
+            id_asesor: 2
+          }
+        );
+        console.log("Chats recibidos:", res.data);
+        setChats(res.data); // Solo los chats reales
+      } catch (err) {
+        console.log("Error al obtener chats:", err);
+      }
+    };
+    fetchChats();
+  }, []);
 
-      setChats(
-        chats.map((chat) => {
-          if (chat.id === selectedChatId) {
+  // 🔹 Socket.IO: conexión y recepción de mensajes
+  useEffect(() => {
+    socket.on("connect", () => {
+      console.log("Conectado al servidor de sockets:", socket.id);
+    });
+
+    socket.on("receiveMessage", (data) => {
+      console.log("Mensaje recibido por socket:", data);
+      const { chatId, content, time } = data;
+
+      setChats((prevChats) =>
+        prevChats.map((chat) => {
+          if (chat.id === chatId) {
             return {
               ...chat,
-              messages: [...chat.messages, newMessage],
-              lastMessage: message,
-              lastMessageTime: newMessage.time,
-              unreadCount: 0,
+              messages: [...(chat.messages || []), { content, time, isSender: false }],
+              lastMessage: content,
+              lastMessageTime: time,
             };
           }
           return chat;
         })
       );
+    });
 
-      setMessage("");
+    return () => {
+      socket.off("receiveMessage");
+      socket.disconnect();
+    };
+  }, []);
+
+  // 🔹 Enviar mensaje
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || !selectedChat) return;
+
+    const newMessage = {
+      content: message,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      isSender: true,
+    };
+
+    // Actualizamos estado local inmediatamente
+    setChats((prevChats) =>
+      prevChats.map((chat) => {
+        if (chat.id === selectedChatId) {
+          return {
+            ...chat,
+            messages: [...(chat.messages || []), newMessage],
+            lastMessage: message,
+            lastMessageTime: newMessage.time,
+          };
+        }
+        return chat;
+      })
+    );
+
+    // Emitimos mensaje por socket
+    socket.emit("sendMessage", {
+      chatId: selectedChatId,
+      content: message,
+      time: newMessage.time,
+    });
+
+    // Guardamos en backend
+    try {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/chat/mensajes`, {
+        chatId: selectedChatId,
+        content: message,
+      });
+    } catch (err) {
+      console.log("Error al enviar mensaje al backend:", err);
     }
+
+    setMessage("");
   };
 
   return (
@@ -94,81 +121,79 @@ function Chatstudy() {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Menu />
-        {/* Chat Layout */}
         <div className="flex h-full bg-gray-100 flex-1">
-          {/* Chat List */}
+          {/* Lista de chats */}
           <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
             <div className="p-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
             </div>
             <div className="divide-y divide-gray-200">
-              {chats.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => setSelectedChatId(chat.id)}
-                  className={`p-4 hover:bg-red-50 cursor-pointer transition-colors duration-150 ${
-                    selectedChatId === chat.id ? "bg-red-50" : ""
-                  }`}
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                      <span className="text-red-600 font-semibold text-lg">
-                        {chat.name[0].toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {chat.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {chat.lastMessageTime}
-                        </p>
-                      </div>
-                      <p className="text-sm text-gray-500 truncate">
-                        {chat.lastMessage}
-                      </p>
-                    </div>
-                    {chat.unreadCount > 0 && (
-                      <div className="w-5 h-5 bg-red-600 rounded-full flex items-center justify-center">
-                        <span className="text-xs text-white">
-                          {chat.unreadCount}
+              {chats.length === 0 ? (
+                <p className="text-center text-gray-400 p-4">
+                  No hay chats disponibles.
+                </p>
+              ) : (
+                chats.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => setSelectedChatId(chat.id)}
+                    className={`p-4 hover:bg-red-50 cursor-pointer transition-colors duration-150 ${
+                      selectedChatId === chat.id ? "bg-red-50" : ""
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red-600 font-semibold text-lg">
+                          {chat.name?.[0]?.toUpperCase() || "?"}
                         </span>
                       </div>
-                    )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {chat.name || "Sin nombre"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {chat.lastMessageTime || ""}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          {chat.lastMessage || "Sin mensajes"}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
-          {/* Chat Window */}
+          {/* Ventana del chat */}
           <div className="flex-1 flex flex-col h-full">
             {selectedChat ? (
               <>
-                {/* Chat Header */}
+                {/* Encabezado */}
                 <div className="p-4 bg-white border-b border-gray-200 flex items-center space-x-4">
                   <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                     <span className="text-red-600 font-semibold">
-                      {selectedChat.name[0].toUpperCase()}
+                      {selectedChat.name?.[0]?.toUpperCase() || "?"}
                     </span>
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedChat.name}
+                      {selectedChat.name || "Chat"}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {selectedChat.status}
+                      {selectedChat.status || ""}
                     </p>
                   </div>
                 </div>
 
-                {/* Messages */}
+                {/* Mensajes */}
                 <div
                   ref={chatContainerRef}
                   className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
                 >
-                  {selectedChat.messages.map((msg, index) => (
+                  {(selectedChat.messages || []).map((msg, index) => (
                     <div
                       key={index}
                       className={`flex ${
@@ -185,9 +210,7 @@ function Chatstudy() {
                         <p className="text-sm">{msg.content}</p>
                         <p
                           className={`text-xs mt-1 ${
-                            msg.isSender
-                              ? "text-red-200"
-                              : "text-gray-500"
+                            msg.isSender ? "text-red-200" : "text-gray-500"
                           }`}
                         >
                           {msg.time}
@@ -198,7 +221,7 @@ function Chatstudy() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
+                {/* Input */}
                 <form
                   onSubmit={handleSendMessage}
                   className="p-4 bg-white border-t border-gray-200"
@@ -223,7 +246,9 @@ function Chatstudy() {
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center bg-gray-50">
-                <p className="text-gray-500">Selecciona un chat para comenzar</p>
+                <p className="text-gray-500">
+                  Selecciona un chat para comenzar
+                </p>
               </div>
             )}
           </div>
@@ -234,4 +259,3 @@ function Chatstudy() {
 }
 
 export default Chatstudy;
-
