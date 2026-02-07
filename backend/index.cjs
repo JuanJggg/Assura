@@ -42,6 +42,9 @@ app.use("/dasboard", dasboardRoutes);
 const chatRoutes = require("./routes/chatroutes.cjs");
 app.use("/chat", chatRoutes);
 
+const chatbotIARoutes = require("./routes/chatbot-ia.routes.cjs");
+app.use("/chatbot-ia", chatbotIARoutes);
+
 io.on("connection", (socket) => {
   console.log("Usuario conectado:", socket.id);
 

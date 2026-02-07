@@ -19,6 +19,7 @@ function Menu() {
       { label: "Inicio", href: "/Dashboard" },
       { label: "Foro de la comunidad", href: "/Forum" },
       { label: "Chats", href: "/Chatstudy" },
+      { label: "Asistente IA", href: "/ChatbotIA" },
     ];
   }
 
