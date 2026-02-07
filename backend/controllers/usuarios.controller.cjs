@@ -114,10 +114,23 @@ exports.forgotPassword = async (req, res) => {
     console.log("GMAIL_PASS cargada:", process.env.GMAIL_PASS ? "Sí" : "No");
 
     // Verificar usuario
-    const result = await pool.query(
+    let result = await pool.query(
       "SELECT * FROM public.asesor WHERE email = $1",
       [email]
     );
+
+    if (result.rowCount > 0) {
+      usuario = result.rows[0];
+    }else{
+      result = await pool.query(
+        "SELECT * FROM public.estudiante WHERE email = $1",
+        [email]
+      );
+      if (result.rowCount > 0) {
+        usuario = result.rows[0];
+      }
+    }
+
     if (result.rowCount === 0) {
       console.log(
         "Usuario no encontrado, simulando respuesta sin enviar correo"
@@ -211,13 +224,23 @@ exports.resetPassword = async (req, res) => {
     console.log("Contraseña encriptada:", hashedPassword);
 
     // Actualizar la contraseña en la tabla asesor
-    const result = await pool.query(
+    let result = await pool.query(
       "UPDATE public.asesor SET password = $1 WHERE email = $2 RETURNING *",
       [hashedPassword, email]
     );
 
+    // Verificar si el usuario es asesor o estudiante
+    if (usuario.rowCount === 0) {
+      console.log("Usuario no encontrado en tabla");
+
+      result = await pool.query(
+        "UPDATE public.estudiante SET password = $1 WHERE email = $2 RETURNING *",
+        [hashedPassword, email]
+      );
+    }
+
     if (result.rowCount === 0) {
-      console.log("Usuario no encontrado en tabla asesor");
+      console.log("Usuario no encontrado en la base de datos");
       return res
         .status(404)
         .json({ ok: false, mensaje: "Usuario no encontrado" });
