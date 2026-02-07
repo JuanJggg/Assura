@@ -11,11 +11,14 @@ function Chatstudy() {
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
-  const userId = "1"; // ID del usuario actual (estudiante)
+  
+  // Obtener userId del localStorage
+  const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
+  const userId = usuario.id;
 
   // Conectar socket
   useEffect(() => {
-    socketRef.current = io(`${import.meta.env.VITE_BACKEND_URL}`, {
+    socketRef.current = io("http://localhost:3001", {
       transports: ["websocket", "polling"],
     });
 
@@ -43,7 +46,7 @@ function Chatstudy() {
     const cargarConversaciones = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/chat/getConversacion/estudiante/${userId}`
+          `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
         );
 
         if (res.data.ok) {
@@ -54,9 +57,11 @@ function Chatstudy() {
             telefono: conv.asesor_telefono,
             lastMessage: conv.ultimo_mensaje || "Sin mensajes",
             lastMessageTime: conv.ultima_actividad 
-              ? new Date(conv.ultima_actividad).toLocaleTimeString([], { 
-                  hour: "2-digit", 
-                  minute: "2-digit" 
+              ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit"
                 })
               : ""
           }));
@@ -73,8 +78,10 @@ function Chatstudy() {
       }
     };
 
-    cargarConversaciones();
-  }, []);
+    if (userId) {
+      cargarConversaciones();
+    }
+  }, [userId]);
 
   // Cargar mensajes cuando se selecciona un chat
   useEffect(() => {
@@ -92,7 +99,7 @@ function Chatstudy() {
   const cargarMensajes = async (chatId) => {
     try {
       const res = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/chat/getMensajes/${chatId}`
+        `http://localhost:3001/chat/getMensajes/${chatId}`
       );
 
       if (res.data.ok) {
@@ -103,10 +110,18 @@ function Chatstudy() {
     }
   };
 
-  // Scroll al último mensaje
+  // Scroll al último mensaje solo cuando se agrega uno nuevo
+  const [messageCount, setMessageCount] = useState(0);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messages.length > messageCount) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setMessageCount(messages.length);
+    } else if (messageCount === 0 && messages.length > 0) {
+      // Solo hacer scroll si no había mensajes antes
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      setMessageCount(messages.length);
+    }
+  }, [messages, messageCount]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -135,7 +150,7 @@ function Chatstudy() {
 
       // Guardar en BD
       await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/chat/mensajes`,
+        `http://localhost:3001/chat/mensajes`,
         messageData
       );
 
@@ -146,7 +161,9 @@ function Chatstudy() {
             ? {
                 ...chat,
                 lastMessage: message.trim(),
-                lastMessageTime: new Date().toLocaleTimeString([], {
+                lastMessageTime: new Date().toLocaleString("es-ES", {
+                  month: "short",
+                  day: "numeric",
                   hour: "2-digit",
                   minute: "2-digit"
                 })
@@ -235,7 +252,7 @@ function Chatstudy() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
-                    const isSender = msg.id_remitente === userId;
+                    const isSender = (msg.id_remitente == userId) || (msg.id_usuario == userId);
                     return (
                       <div
                         key={idx}
@@ -254,10 +271,13 @@ function Chatstudy() {
                               isSender ? "text-red-200" : "text-gray-500"
                             }`}
                           >
-                            {new Date(msg.fecha_envio).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
+                            {msg.fecha_envio 
+                              ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true
+                                })
+                              : ""}
                           </p>
                         </div>
                       </div>

@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Middleware de logging
 app.use((req, res, next) => {
-  console.log("➡️ Petición entrante:", req.method, req.url);
+  console.log("Petición entrante:", req.method, req.url);
   next();
 });
 
@@ -43,30 +43,37 @@ const chatRoutes = require("./routes/chatroutes.cjs");
 app.use("/chat", chatRoutes);
 
 io.on("connection", (socket) => {
-  console.log("✅ Usuario conectado:", socket.id);
+  console.log("Usuario conectado:", socket.id);
 
   // Unirse a una sala específica (opcional)
-  socket.on("joinRoom", (roomID) => {
-    socket.join(roomID);
-    console.log(`👥 Usuario ${socket.id} se unió a la sala ${roomID}`);
+  socket.on("unirse", (data) => {
+    const { chatId } = data;
+    if (chatId) {
+      socket.join(`chat-${chatId}`);
+      console.log(`👥 Usuario ${socket.id} se unió a la sala chat-${chatId}`);
+    }
   });
 
   // Cuando un usuario envía un mensaje
-  socket.on("sendMessage", async (data) => {
+  socket.on("mensaje", async (data) => {
     try {
       console.log("📩 Mensaje recibido:", data);
       
       // Guardar en PostgreSQL
       const mensajeGuardado = await guardarMensaje(data);
       
-      // Emitir a todos los clientes conectados
-      io.emit("receiveMessage", {
-        ...data,
-        id: mensajeGuardado.id,
-        fecha_envio: mensajeGuardado.fecha_envio
-      });
-      
-      console.log("✅ Mensaje guardado y enviado");
+      // Emitir a la sala específica del chat
+      if (data.chatId) {
+        io.to(`chat-${data.chatId}`).emit("mensaje", {
+          id: mensajeGuardado.id,
+          id_conversacion: data.chatId,
+          contenido: data.content,
+          id_remitente: mensajeGuardado.id_usuario || mensajeGuardado.id_remitente,
+          id_usuario: mensajeGuardado.id_usuario || mensajeGuardado.id_remitente,
+          fecha_envio: mensajeGuardado.fecha_envio
+        });
+        console.log(`✅ Mensaje guardado y enviado a chat-${data.chatId}`);
+      }
     } catch (err) {
       console.error("❌ Error al guardar mensaje:", err);
       socket.emit("error", { message: "Error al enviar mensaje" });

@@ -13,7 +13,7 @@ exports.crearConversacion = async (req, res) => {
               a.nombres AS asesor_nombre, 
               a.apellidos AS asesor_apellido,
               a.telefono AS asesor_telefono,
-              a.materia AS asesor_materia
+              '' AS asesor_materia
        FROM chats_conversacion c
        JOIN asesor a ON c.id_asesor = a.id
        WHERE c.id_estudiante = $1 AND c.id_asesor = $2`,
@@ -41,7 +41,7 @@ exports.crearConversacion = async (req, res) => {
               a.nombres AS asesor_nombre, 
               a.apellidos AS asesor_apellido,
               a.telefono AS asesor_telefono,
-              a.materia AS asesor_materia
+              '' AS asesor_materia
        FROM chats_conversacion c
        JOIN asesor a ON c.id_asesor = a.id
        WHERE c.id = $1`,
@@ -57,7 +57,17 @@ exports.crearConversacion = async (req, res) => {
     });
   } catch (err) {
     console.error("Error al crear conversacion:", err);
-    res.status(500).json({ error: "Error al crear conversacion" });
+    console.error("Detalles del error:", {
+      message: err.message,
+      code: err.code,
+      detail: err.detail,
+      constraint: err.constraint
+    });
+    res.status(500).json({ 
+      error: "Error al crear conversacion",
+      details: err.message,
+      code: err.code
+    });
   }
 };
 
@@ -71,7 +81,7 @@ exports.getConversacion = async (req, res) => {
                a.nombres AS asesor_nombre, 
                a.apellidos AS asesor_apellido,
                a.telefono AS asesor_telefono,
-               a.materia AS asesor_materia,
+               '' AS asesor_materia,
                (SELECT contenido FROM chat_mensaje 
                 WHERE id_conversacion = c.id 
                 ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
@@ -82,7 +92,10 @@ exports.getConversacion = async (req, res) => {
     } else {
       query = `SELECT c.*, 
                e.nombres AS estudiante_nombre, 
-               e.apellidos AS estudiante_apellido
+               e.apellidos AS estudiante_apellido,
+               (SELECT contenido FROM chat_mensaje 
+                WHERE id_conversacion = c.id 
+                ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
        FROM chats_conversacion c
        JOIN estudiante e ON c.id_estudiante = e.id
        WHERE c.id_asesor = $1
@@ -118,8 +131,9 @@ exports.guardarMensaje = async (data) => {
   const { chatId, content, senderId } = data;
   
   try {
+    // Primero intentamos con el nombre probable de la columna
     const result = await pool.query(
-      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_remitente, fecha_envio) 
+      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_usuario, fecha_envio) 
        VALUES ($1, $2, $3, NOW()) RETURNING *`,
       [chatId, content, senderId]
     );
