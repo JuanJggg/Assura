@@ -33,38 +33,9 @@ router.get("/getMensajes/:id_conversacion", chatController.getMensajes);
 
 /**
  * POST /chat/mensajes
- * Guarda un nuevo mensaje (usado junto con socket.io)
+ * Envía un nuevo mensaje (guarda en DB y dispara evento de Pusher)
  * Body: { chatId, content, senderId }
  */
-router.post("/mensajes", async (req, res) => {
-  try {
-    const { chatId, content, senderId } = req.body;
-    
-    if (!chatId || !content || !senderId) {
-      return res.status(400).json({ 
-        error: "Faltan datos requeridos",
-        required: ["chatId", "content", "senderId"]
-      });
-    }
-
-    const mensaje = await chatController.guardarMensaje({
-      chatId,
-      content,
-      senderId
-    });
-
-    res.json({ 
-      ok: true, 
-      mensaje,
-      message: "Mensaje guardado exitosamente"
-    });
-  } catch (err) {
-    console.error("Error en ruta /mensajes:", err);
-    res.status(500).json({ 
-      error: "Error al guardar mensaje",
-      details: err.message 
-    });
-  }
-});
+router.post("/mensajes", chatController.enviarMensaje);
 
 module.exports = router;

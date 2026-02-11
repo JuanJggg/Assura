@@ -1,4 +1,5 @@
 const pool = require("../config/db.cjs");
+const pusher = require("../config/pusher.cjs");
 
 exports.crearConversacion = async (req, res) => {
   const id_estudiante = req.body.id_estudiante || req.body.idUsuario;
@@ -129,24 +130,77 @@ exports.getMensajes = async (req, res) => {
 
 exports.guardarMensaje = async (data) => {
   const { chatId, content, senderId } = data;
-  
+
   try {
-    // Primero intentamos con el nombre probable de la columna
     const result = await pool.query(
-      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_usuario, fecha_envio) 
+      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_usuario, fecha_envio)
        VALUES ($1, $2, $3, NOW()) RETURNING *`,
       [chatId, content, senderId]
     );
-    
-    // Actualizar última actividad
+
     await pool.query(
       "UPDATE chats_conversacion SET ultima_actividad = NOW() WHERE id = $1",
       [chatId]
     );
-    
+
     return result.rows[0];
   } catch (err) {
     console.error("Error al guardar mensaje:", err);
     throw err;
+  }
+};
+
+exports.enviarMensaje = async (req, res) => {
+  const { chatId, content, senderId } = req.body;
+
+  if (!chatId || !content || !senderId) {
+    return res.status(400).json({
+      error: "Faltan datos requeridos",
+      required: ["chatId", "content", "senderId"]
+    });
+  }
+
+  try {
+    const mensajeGuardado = await exports.guardarMensaje({ chatId, content, senderId });
+
+    const conversacion = await pool.query(
+      "SELECT id_estudiante, id_asesor FROM chats_conversacion WHERE id = $1",
+      [chatId]
+    );
+
+    if (conversacion.rows.length === 0) {
+      return res.status(404).json({ error: "Conversación no encontrada" });
+    }
+
+    const { id_estudiante, id_asesor } = conversacion.rows[0];
+    const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
+
+    await pool.query(
+      `INSERT INTO chats_notificacion (id_conversacion, id_receptor, leido, fecha_creacion)
+       VALUES ($1, $2, false, NOW())
+       ON CONFLICT (id_conversacion, id_receptor)
+       DO UPDATE SET leido = false, fecha_creacion = NOW()`,
+      [chatId, receptorId]
+    );
+
+    await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", {
+      id: mensajeGuardado.id,
+      id_conversacion: chatId,
+      contenido: content,
+      id_usuario: senderId,
+      fecha_envio: mensajeGuardado.fecha_envio,
+    });
+
+    res.json({
+      ok: true,
+      mensaje: mensajeGuardado,
+      message: "Mensaje enviado exitosamente"
+    });
+  } catch (err) {
+    console.error("Error al enviar mensaje:", err);
+    res.status(500).json({
+      error: "Error al enviar mensaje",
+      details: err.message
+    });
   }
 };

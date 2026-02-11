@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Menu from "./../menu";
 import Header from "./../header";
 import axios from "axios";
-import { io } from "socket.io-client";
+import pusher from "../../services/pusher";
 
 function Chatstudy() {
   const [selectedChatId, setSelectedChatId] = useState(null);
@@ -10,36 +10,31 @@ function Chatstudy() {
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
-  
-  // Obtener userId del localStorage
+  const channelRef = useRef(null);
+
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
 
-  // Conectar socket
   useEffect(() => {
-    socketRef.current = io("http://localhost:3001", {
-      transports: ["websocket", "polling"],
-    });
+    if (!selectedChatId) return;
 
-    socketRef.current.on("connect", () => {
-      console.log("Socket conectado");
-    });
+    const channel = pusher.subscribe(`chat-${selectedChatId}`);
+    channelRef.current = channel;
 
-    socketRef.current.on("mensaje", (data) => {
+    channel.bind("nuevo-mensaje", (data) => {
       console.log("Mensaje recibido:", data);
-      // Si el mensaje es de la conversación actual, agregarlo
-      if (selectedChatId && data.id_conversacion === selectedChatId) {
+      if (data.id_usuario !== userId) {
         setMessages(prev => [...prev, data]);
       }
     });
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        pusher.unsubscribe(`chat-${selectedChatId}`);
       }
     };
-  }, [selectedChatId]);
+  }, [selectedChatId, userId]);
 
   // Cargar conversaciones al montar
   useEffect(() => {
@@ -83,15 +78,9 @@ function Chatstudy() {
     }
   }, [userId]);
 
-  // Cargar mensajes cuando se selecciona un chat
   useEffect(() => {
     if (selectedChatId) {
       cargarMensajes(selectedChatId);
-      
-      // Unirse a la sala del socket
-      if (socketRef.current) {
-        socketRef.current.emit("unirse", { chatId: selectedChatId });
-      }
     }
   }, [selectedChatId]);
 
@@ -134,27 +123,19 @@ function Chatstudy() {
     };
 
     try {
-      // Agregar mensaje localmente (optimistic update)
       const tempMessage = {
         id_conversacion: selectedChatId,
         contenido: message.trim(),
-        id_remitente: userId,
+        id_usuario: userId,
         fecha_envio: new Date().toISOString()
       };
       setMessages(prev => [...prev, tempMessage]);
 
-      // Enviar por socket
-      if (socketRef.current) {
-        socketRef.current.emit("mensaje", messageData);
-      }
-
-      // Guardar en BD
       await axios.post(
         `http://localhost:3001/chat/mensajes`,
         messageData
       );
 
-      // Actualizar último mensaje en la lista de chats
       setChats(prevChats =>
         prevChats.map(chat =>
           chat.id === selectedChatId
@@ -252,7 +233,7 @@ function Chatstudy() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
-                    const isSender = (msg.id_remitente == userId) || (msg.id_usuario == userId);
+                    const isSender = msg.id_usuario == userId;
                     return (
                       <div
                         key={idx}
@@ -271,7 +252,7 @@ function Chatstudy() {
                               isSender ? "text-red-200" : "text-gray-500"
                             }`}
                           >
-                            {msg.fecha_envio 
+                            {msg.fecha_envio
                               ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", {
                                   hour: "2-digit",
                                   minute: "2-digit",
