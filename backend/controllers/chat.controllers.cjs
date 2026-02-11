@@ -78,40 +78,52 @@ exports.crearConversacion = async (req, res) => {
 
 exports.getConversacion = async (req, res) => {
   const { tipo, id } = req.params;
-  
+
+  console.log(`\n🔍 OBTENER CONVERSACIONES - Tipo: ${tipo}, ID: ${id}`);
+
   try {
     let query;
     if (tipo === "estudiante") {
-      query = `SELECT c.*, 
-               a.nombres AS asesor_nombre, 
+      query = `SELECT c.*,
+               a.nombres AS asesor_nombre,
                a.apellidos AS asesor_apellido,
                a.telefono AS asesor_telefono,
                '' AS asesor_materia,
-               (SELECT contenido FROM chat_mensaje 
-                WHERE id_conversacion = c.id 
+               (SELECT contenido FROM chat_mensaje
+                WHERE id_conversacion = c.id
                 ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
        FROM chats_conversacion c
        JOIN asesor a ON c.id_asesor = a.id
        WHERE c.id_estudiante = $1
        ORDER BY c.ultima_actividad DESC`;
     } else {
-      query = `SELECT c.*, 
-               e.nombres AS estudiante_nombre, 
+      query = `SELECT c.*,
+               e.nombres AS estudiante_nombre,
                e.apellidos AS estudiante_apellido,
-               (SELECT contenido FROM chat_mensaje 
-                WHERE id_conversacion = c.id 
+               (SELECT contenido FROM chat_mensaje
+                WHERE id_conversacion = c.id
                 ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
        FROM chats_conversacion c
        JOIN estudiante e ON c.id_estudiante = e.id
        WHERE c.id_asesor = $1
        ORDER BY c.ultima_actividad DESC`;
     }
-    
+
+    console.log(`📋 Query a ejecutar:\n${query}`);
+    console.log(`📋 Con parámetro ID: ${id}`);
+
     const result = await pool.query(query, [id]);
+
+    console.log(`✅ Conversaciones encontradas: ${result.rows.length}`);
+    if (result.rows.length > 0) {
+      console.log(`📝 Primera conversación:`, result.rows[0]);
+    }
+
     res.json({ ok: true, conversaciones: result.rows });
   } catch (err) {
-    console.error("Error al obtener conversacion:", err);
-    res.status(500).json({ error: "Error al obtener conversacion" });
+    console.error("❌ Error al obtener conversacion:", err);
+    console.error("   Detalles:", err.message);
+    res.status(500).json({ error: "Error al obtener conversacion", details: err.message });
   }
 };
 
