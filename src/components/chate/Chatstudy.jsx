@@ -33,11 +33,11 @@ function Chatstudy() {
 
     channel.bind("nuevo-mensaje", (data) => {
       console.log("📨 Mensaje recibido en chat-" + selectedChatId + ":", data);
-      console.log("   Usuario que envió:", data.id_usuario);
+      console.log("   Usuario que envió:", data.remitente_id);
       console.log("   Usuario actual:", userId);
-      console.log("   ¿Es de otro usuario?", data.id_usuario !== userId);
+      console.log("   ¿Es de otro usuario?", data.remitente_id != userId);
 
-      if (data.id_usuario !== userId) {
+      if (data.remitente_id != userId) {
         console.log("✅ Agregando mensaje a la lista");
         setMessages(prev => [...prev, data]);
       } else {
@@ -172,7 +172,8 @@ function Chatstudy() {
       const tempMessage = {
         id_conversacion: selectedChatId,
         contenido: message.trim(),
-        id_usuario: userId,
+        remitente_id: userId,
+        remitente_tipo: 'estudiante',
         fecha_envio: new Date().toISOString()
       };
       setMessages(prev => [...prev, tempMessage]);
@@ -282,7 +283,7 @@ function Chatstudy() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
-                    const isSender = msg.id_usuario == userId;
+                    const isSender = msg.remitente_id == userId;
                     return (
                       <div
                         key={idx}

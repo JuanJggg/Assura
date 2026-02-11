@@ -133,13 +133,13 @@ exports.getMensajes = async (req, res) => {
 };
 
 exports.guardarMensaje = async (data) => {
-  const { chatId, content, senderId } = data;
+  const { chatId, content, senderId, senderType } = data;
 
   try {
     const result = await pool.query(
-      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_usuario, fecha_envio)
-       VALUES ($1, $2, $3, NOW()) RETURNING *`,
-      [chatId, content, senderId]
+      `INSERT INTO chat_mensaje (id_conversacion, contenido, remitente_id, remitente_tipo, fecha_envio, leido)
+       VALUES ($1, $2, $3, $4, NOW(), false) RETURNING *`,
+      [chatId, content, senderId, senderType]
     );
 
     await pool.query(
@@ -168,11 +168,7 @@ exports.enviarMensaje = async (req, res) => {
   }
 
   try {
-    console.log("1. Guardando mensaje en BD...");
-    const mensajeGuardado = await exports.guardarMensaje({ chatId, content, senderId });
-    console.log("✓ Mensaje guardado:", mensajeGuardado);
-
-    console.log("2. Obteniendo datos de conversación...");
+    console.log("1. Obteniendo datos de conversación...");
     const conversacion = await pool.query(
       "SELECT id_estudiante, id_asesor FROM chats_conversacion WHERE id = $1",
       [chatId]
@@ -185,16 +181,29 @@ exports.enviarMensaje = async (req, res) => {
     const { id_estudiante, id_asesor } = conversacion.rows[0];
     console.log("✓ Conversación encontrada:", { id_estudiante, id_asesor });
 
+    // Determinar si el remitente es estudiante o asesor
+    const esAsesor = senderId == id_asesor;
+    const senderType = esAsesor ? 'asesor' : 'estudiante';
+    console.log("✓ Tipo de remitente identificado:", senderType);
+
+    console.log("2. Guardando mensaje en BD...");
+    const mensajeGuardado = await exports.guardarMensaje({
+      chatId,
+      content,
+      senderId,
+      senderType
+    });
+    console.log("✓ Mensaje guardado:", mensajeGuardado);
+
     const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
-    console.log("✓ Receptor identificado:", receptorId);
+    const receptorTipo = esAsesor ? 'estudiante' : 'asesor';
+    console.log("✓ Receptor identificado:", receptorId, "tipo:", receptorTipo);
 
     console.log("3. Creando notificación...");
     await pool.query(
-      `INSERT INTO chats_notificacion (id_conversacion, id_receptor, leido, fecha_creacion)
-       VALUES ($1, $2, false, NOW())
-       ON CONFLICT (id_conversacion, id_receptor)
-       DO UPDATE SET leido = false, fecha_creacion = NOW()`,
-      [chatId, receptorId]
+      `INSERT INTO chat_notificacion (id_mensaje, usuario_id, usuario_tipo, leido, fecha)
+       VALUES ($1, $2, $3, false, NOW())`,
+      [mensajeGuardado.id, receptorId, receptorTipo]
     );
     console.log("✓ Notificación creada");
 
@@ -203,12 +212,12 @@ exports.enviarMensaje = async (req, res) => {
       id: mensajeGuardado.id,
       id_conversacion: chatId,
       contenido: content,
-      id_usuario: senderId,
+      remitente_id: senderId,
+      remitente_tipo: senderType,
       fecha_envio: mensajeGuardado.fecha_envio,
     });
     console.log("✓ Evento 'nuevo-mensaje' enviado:", pushResult1);
 
-    const esAsesor = senderId == id_asesor;
     const canalReceptor = esAsesor ? `estudiante-${id_estudiante}` : `asesor-${id_asesor}`;
     console.log("5. Enviando notificación al canal:", canalReceptor);
 
@@ -228,6 +237,7 @@ exports.enviarMensaje = async (req, res) => {
   } catch (err) {
     console.error("❌ ERROR al enviar mensaje:", err);
     console.error("Detalles:", err.message);
+    console.error("Stack:", err.stack);
     res.status(500).json({
       error: "Error al enviar mensaje",
       details: err.message
