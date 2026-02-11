@@ -157,6 +157,9 @@ exports.guardarMensaje = async (data) => {
 exports.enviarMensaje = async (req, res) => {
   const { chatId, content, senderId } = req.body;
 
+  console.log("====== ENVIAR MENSAJE ======");
+  console.log("Datos recibidos:", { chatId, content, senderId });
+
   if (!chatId || !content || !senderId) {
     return res.status(400).json({
       error: "Faltan datos requeridos",
@@ -165,8 +168,11 @@ exports.enviarMensaje = async (req, res) => {
   }
 
   try {
+    console.log("1. Guardando mensaje en BD...");
     const mensajeGuardado = await exports.guardarMensaje({ chatId, content, senderId });
+    console.log("✓ Mensaje guardado:", mensajeGuardado);
 
+    console.log("2. Obteniendo datos de conversación...");
     const conversacion = await pool.query(
       "SELECT id_estudiante, id_asesor FROM chats_conversacion WHERE id = $1",
       [chatId]
@@ -177,8 +183,12 @@ exports.enviarMensaje = async (req, res) => {
     }
 
     const { id_estudiante, id_asesor } = conversacion.rows[0];
-    const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
+    console.log("✓ Conversación encontrada:", { id_estudiante, id_asesor });
 
+    const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
+    console.log("✓ Receptor identificado:", receptorId);
+
+    console.log("3. Creando notificación...");
     await pool.query(
       `INSERT INTO chats_notificacion (id_conversacion, id_receptor, leido, fecha_creacion)
        VALUES ($1, $2, false, NOW())
@@ -186,22 +196,29 @@ exports.enviarMensaje = async (req, res) => {
        DO UPDATE SET leido = false, fecha_creacion = NOW()`,
       [chatId, receptorId]
     );
+    console.log("✓ Notificación creada");
 
-    await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", {
+    console.log("4. Enviando evento Pusher al canal chat-" + chatId);
+    const pushResult1 = await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", {
       id: mensajeGuardado.id,
       id_conversacion: chatId,
       contenido: content,
       id_usuario: senderId,
       fecha_envio: mensajeGuardado.fecha_envio,
     });
+    console.log("✓ Evento 'nuevo-mensaje' enviado:", pushResult1);
 
     const esAsesor = senderId == id_asesor;
     const canalReceptor = esAsesor ? `estudiante-${id_estudiante}` : `asesor-${id_asesor}`;
+    console.log("5. Enviando notificación al canal:", canalReceptor);
 
-    await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
+    const pushResult2 = await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
       id_conversacion: chatId,
       mensaje: content,
     });
+    console.log("✓ Evento 'nuevo-mensaje-notificacion' enviado:", pushResult2);
+
+    console.log("====== MENSAJE ENVIADO EXITOSAMENTE ======\n");
 
     res.json({
       ok: true,
@@ -209,7 +226,8 @@ exports.enviarMensaje = async (req, res) => {
       message: "Mensaje enviado exitosamente"
     });
   } catch (err) {
-    console.error("Error al enviar mensaje:", err);
+    console.error("❌ ERROR al enviar mensaje:", err);
+    console.error("Detalles:", err.message);
     res.status(500).json({
       error: "Error al enviar mensaje",
       details: err.message

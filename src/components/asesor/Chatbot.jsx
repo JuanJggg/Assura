@@ -17,18 +17,35 @@ function Chatbot() {
   useEffect(() => {
     if (!selectedChatId) return;
 
+    console.log("📡 Suscribiéndose al canal: chat-" + selectedChatId);
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
 
+    channel.bind("pusher:subscription_succeeded", () => {
+      console.log("✅ Suscripción exitosa al canal: chat-" + selectedChatId);
+    });
+
+    channel.bind("pusher:subscription_error", (err) => {
+      console.error("❌ Error al suscribirse al canal chat-" + selectedChatId, err);
+    });
+
     channel.bind("nuevo-mensaje", (data) => {
-      console.log("Mensaje recibido:", data);
+      console.log("📨 Mensaje recibido en chat-" + selectedChatId + ":", data);
+      console.log("   Usuario que envió:", data.id_usuario);
+      console.log("   Usuario actual:", userId);
+      console.log("   ¿Es de otro usuario?", data.id_usuario !== userId);
+
       if (data.id_usuario !== userId) {
+        console.log("✅ Agregando mensaje a la lista");
         setMessages((prev) => [...prev, data]);
+      } else {
+        console.log("⏭️ Mensaje propio, ignorando (ya está en la lista)");
       }
     });
 
     return () => {
       if (channelRef.current) {
+        console.log("🔌 Desuscribiéndose del canal: chat-" + selectedChatId);
         channelRef.current.unbind_all();
         pusher.unsubscribe(`chat-${selectedChatId}`);
       }
@@ -38,21 +55,31 @@ function Chatbot() {
   useEffect(() => {
     if (!userId) return;
 
+    console.log("📡 Suscribiéndose al canal de notificaciones: asesor-" + userId);
     const notificationChannel = pusher.subscribe(`asesor-${userId}`);
     notificationChannelRef.current = notificationChannel;
 
+    notificationChannel.bind("pusher:subscription_succeeded", () => {
+      console.log("✅ Suscripción exitosa al canal: asesor-" + userId);
+    });
+
+    notificationChannel.bind("pusher:subscription_error", (err) => {
+      console.error("❌ Error al suscribirse al canal asesor-" + userId, err);
+    });
+
     notificationChannel.bind("nueva-conversacion", (data) => {
-      console.log("Nueva conversación recibida:", data);
+      console.log("🆕 Nueva conversación recibida:", data);
       cargarConversaciones();
     });
 
     notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
-      console.log("Notificación de nuevo mensaje:", data);
+      console.log("🔔 Notificación de nuevo mensaje:", data);
       cargarConversaciones();
     });
 
     return () => {
       if (notificationChannelRef.current) {
+        console.log("🔌 Desuscribiéndose del canal: asesor-" + userId);
         notificationChannelRef.current.unbind_all();
         pusher.unsubscribe(`asesor-${userId}`);
       }
@@ -139,6 +166,8 @@ function Chatbot() {
       senderId: userId,
     };
 
+    console.log("📤 Enviando mensaje:", messageData);
+
     try {
       const tempMessage = {
         id_conversacion: selectedChatId,
@@ -148,7 +177,9 @@ function Chatbot() {
       };
       setMessages((prev) => [...prev, tempMessage]);
 
-      await axios.post(`http://localhost:3001/chat/mensajes`, messageData);
+      console.log("➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes");
+      const response = await axios.post(`http://localhost:3001/chat/mensajes`, messageData);
+      console.log("✅ Respuesta del backend:", response.data);
 
       setChats((prevChats) =>
         prevChats.map((chat) =>
@@ -169,7 +200,8 @@ function Chatbot() {
 
       setMessage("");
     } catch (err) {
-      console.log("Error al enviar mensaje:", err);
+      console.error("❌ Error al enviar mensaje:", err);
+      console.error("Detalles:", err.response?.data || err.message);
     }
   };
 
