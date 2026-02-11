@@ -58,9 +58,13 @@ function Chatstudy() {
 
   const cargarConversaciones = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/obtener-conversaciones?tipo=estudiante&id=${userId}`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const res = await axios.get(apiUrl, { headers });
 
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
@@ -102,12 +106,15 @@ function Chatstudy() {
     }
   }, [selectedChatId]);
 
-  // Cargar mensajes de una conversación
   const cargarMensajes = async (chatId) => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getMensajes/${chatId}`
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/obtener-mensajes?id_conversacion=${chatId}`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const res = await axios.get(apiUrl, { headers });
 
       if (res.data.ok) {
         setMessages(res.data.mensajes || []);
@@ -149,10 +156,13 @@ function Chatstudy() {
       };
       setMessages(prev => [...prev, tempMessage]);
 
-      await axios.post(
-        `http://localhost:3001/chat/mensajes`,
-        messageData
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enviar-mensaje`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      await axios.post(apiUrl, messageData, { headers });
 
       setChats(prevChats =>
         prevChats.map(chat =>

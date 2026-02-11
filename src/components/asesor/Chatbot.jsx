@@ -61,9 +61,13 @@ function Chatbot() {
 
   const cargarConversaciones = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getConversacion/asesor/${userId}`
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/obtener-conversaciones?tipo=asesor&id=${userId}`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const res = await axios.get(apiUrl, { headers });
 
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map((conv) => ({
@@ -106,9 +110,13 @@ function Chatbot() {
 
   const cargarMensajes = async (chatId) => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getMensajes/${chatId}`
-      );
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/obtener-mensajes?id_conversacion=${chatId}`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const res = await axios.get(apiUrl, { headers });
 
       if (res.data.ok) {
         setMessages(res.data.mensajes || []);
@@ -148,7 +156,13 @@ function Chatbot() {
       };
       setMessages((prev) => [...prev, tempMessage]);
 
-      await axios.post(`http://localhost:3001/chat/mensajes`, messageData);
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enviar-mensaje`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      await axios.post(apiUrl, messageData, { headers });
 
       setChats((prevChats) =>
         prevChats.map((chat) =>
