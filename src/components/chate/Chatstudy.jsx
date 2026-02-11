@@ -12,9 +12,14 @@ function Chatstudy() {
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
+  const selectedChatIdRef = useRef(selectedChatId);
 
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
+
+  useEffect(() => {
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
 
   useEffect(() => {
     if (!selectedChatId) return;
@@ -71,7 +76,17 @@ function Chatstudy() {
 
     notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
       console.log("🔔 Notificación de nuevo mensaje:", data);
+      console.log("   ID conversación recibida:", data.id_conversacion);
+      console.log("   ID conversación actual:", selectedChatIdRef.current);
+
       cargarConversaciones();
+
+      if (data.id_conversacion == selectedChatIdRef.current) {
+        console.log("✅ Es el chat actual, recargando mensajes...");
+        cargarMensajes(selectedChatIdRef.current);
+      } else {
+        console.log("ℹ️ No es el chat actual, solo se actualiza la lista");
+      }
     });
 
     return () => {
