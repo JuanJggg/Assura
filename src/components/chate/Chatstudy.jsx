@@ -11,6 +11,7 @@ function Chatstudy() {
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
+  const notificationChannelRef = useRef(null);
 
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
@@ -36,43 +37,60 @@ function Chatstudy() {
     };
   }, [selectedChatId, userId]);
 
-  // Cargar conversaciones al montar
   useEffect(() => {
-    const cargarConversaciones = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
-        );
+    if (!userId) return;
 
-        if (res.data.ok) {
-          const conversaciones = res.data.conversaciones.map(conv => ({
-            id: conv.id,
-            name: `${conv.asesor_nombre} ${conv.asesor_apellido}`,
-            status: conv.asesor_materia,
-            telefono: conv.asesor_telefono,
-            lastMessage: conv.ultimo_mensaje || "Sin mensajes",
-            lastMessageTime: conv.ultima_actividad 
-              ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })
-              : ""
-          }));
-          
-          setChats(conversaciones);
-          
-          // Si hay conversaciones, seleccionar la primera
-          if (conversaciones.length > 0) {
-            setSelectedChatId(conversaciones[0].id);
-          }
-        }
-      } catch (err) {
-        console.log("Error al cargar conversaciones:", err);
+    const notificationChannel = pusher.subscribe(`estudiante-${userId}`);
+    notificationChannelRef.current = notificationChannel;
+
+    notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
+      console.log("Notificación de nuevo mensaje:", data);
+      cargarConversaciones();
+    });
+
+    return () => {
+      if (notificationChannelRef.current) {
+        notificationChannelRef.current.unbind_all();
+        pusher.unsubscribe(`estudiante-${userId}`);
       }
     };
+  }, [userId]);
 
+  const cargarConversaciones = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
+      );
+
+      if (res.data.ok) {
+        const conversaciones = res.data.conversaciones.map(conv => ({
+          id: conv.id,
+          name: `${conv.asesor_nombre} ${conv.asesor_apellido}`,
+          status: conv.asesor_materia,
+          telefono: conv.asesor_telefono,
+          lastMessage: conv.ultimo_mensaje || "Sin mensajes",
+          lastMessageTime: conv.ultima_actividad
+            ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              })
+            : ""
+        }));
+
+        setChats(conversaciones);
+
+        if (conversaciones.length > 0 && !selectedChatId) {
+          setSelectedChatId(conversaciones[0].id);
+        }
+      }
+    } catch (err) {
+      console.log("Error al cargar conversaciones:", err);
+    }
+  };
+
+  useEffect(() => {
     if (userId) {
       cargarConversaciones();
     }

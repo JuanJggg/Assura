@@ -50,11 +50,15 @@ exports.crearConversacion = async (req, res) => {
     );
     
     console.log("Nueva conversación creada:", conversacionCompleta.rows[0]);
-    
-    res.json({ 
-      ok: true, 
+
+    await pusher.trigger(`asesor-${id_asesor}`, "nueva-conversacion", {
       conversacion: conversacionCompleta.rows[0],
-      nuevo: true 
+    });
+
+    res.json({
+      ok: true,
+      conversacion: conversacionCompleta.rows[0],
+      nuevo: true
     });
   } catch (err) {
     console.error("Error al crear conversacion:", err);
@@ -189,6 +193,14 @@ exports.enviarMensaje = async (req, res) => {
       contenido: content,
       id_usuario: senderId,
       fecha_envio: mensajeGuardado.fecha_envio,
+    });
+
+    const esAsesor = senderId == id_asesor;
+    const canalReceptor = esAsesor ? `estudiante-${id_estudiante}` : `asesor-${id_asesor}`;
+
+    await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
+      id_conversacion: chatId,
+      mensaje: content,
     });
 
     res.json({

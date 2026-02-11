@@ -1,91 +1,179 @@
-import React, { useState, useRef, useEffect} from 'react';
+import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import pusher from "../../services/pusher";
 
 function Chatbot() {
   const [selectedChatId, setSelectedChatId] = useState(null);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
-  const chatContainerRef = useRef(null);
-  
-  const [chats, setChats] = useState([
-    {
-      id: 1,
-      name: "Dr. García",
-      status: "Asesor de Cálculo",
-      lastMessage: "¿Tienes dudas sobre la tarea?",
-      lastMessageTime: "10:30 AM",
-      unreadCount: 2,
-      messages: [
-        {
-          content: "Hola, ¿cómo puedo ayudarte con cálculo?",
-          time: "10:25 AM",
-          isSender: false
-        },
-        {
-          content: "Tengo dudas sobre derivadas parciales",
-          time: "10:28 AM",
-          isSender: true
-        },
-        {
-          content: "¿Tienes dudas sobre la tarea?",
-          time: "10:30 AM",
-          isSender: false
-        }
-      ]
-    },
-    {
-      id: 2,
-      name: "Dra. Martínez",
-      status: "Asesora de Física",
-      lastMessage: "Claro, nos vemos en la sesión",
-      lastMessageTime: "9:45 AM",
-      unreadCount: 0,
-      messages: [
-        {
-          content: "¿Podemos agendar una asesoría?",
-          time: "9:40 AM",
-          isSender: true
-        },
-        {
-          content: "Claro, nos vemos en la sesión",
-          time: "9:45 AM",
-          isSender: false
-        }
-      ]
-    }
-  ]);
-  const selectedChat = chats.find(chat => chat.id === selectedChatId);
+  const channelRef = useRef(null);
+  const notificationChannelRef = useRef(null);
 
-  // Seleccionar automáticamente el primer chat
+  const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
+  const userId = usuario.id;
+
   useEffect(() => {
-    if (chats.length > 0 && !selectedChatId) {
-      setSelectedChatId(chats[0].id);
-    }
-  }, [chats, selectedChatId]);
+    if (!selectedChatId) return;
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    if (message.trim() && selectedChat) {
-      const newMessage = {
-        content: message,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isSender: true
-      };
+    const channel = pusher.subscribe(`chat-${selectedChatId}`);
+    channelRef.current = channel;
 
-      setChats(chats.map(chat => {
-        if (chat.id === selectedChatId) {
-          return {
-            ...chat,
-            messages: [...chat.messages, newMessage],
-            lastMessage: message,
-            lastMessageTime: newMessage.time
-          };
+    channel.bind("nuevo-mensaje", (data) => {
+      console.log("Mensaje recibido:", data);
+      if (data.id_usuario !== userId) {
+        setMessages((prev) => [...prev, data]);
+      }
+    });
+
+    return () => {
+      if (channelRef.current) {
+        channelRef.current.unbind_all();
+        pusher.unsubscribe(`chat-${selectedChatId}`);
+      }
+    };
+  }, [selectedChatId, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const notificationChannel = pusher.subscribe(`asesor-${userId}`);
+    notificationChannelRef.current = notificationChannel;
+
+    notificationChannel.bind("nueva-conversacion", (data) => {
+      console.log("Nueva conversación recibida:", data);
+      cargarConversaciones();
+    });
+
+    notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
+      console.log("Notificación de nuevo mensaje:", data);
+      cargarConversaciones();
+    });
+
+    return () => {
+      if (notificationChannelRef.current) {
+        notificationChannelRef.current.unbind_all();
+        pusher.unsubscribe(`asesor-${userId}`);
+      }
+    };
+  }, [userId]);
+
+  const cargarConversaciones = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3001/chat/getConversacion/asesor/${userId}`
+      );
+
+      if (res.data.ok) {
+        const conversaciones = res.data.conversaciones.map((conv) => ({
+          id: conv.id,
+          name: `${conv.estudiante_nombre} ${conv.estudiante_apellido}`,
+          status: "Estudiante",
+          lastMessage: conv.ultimo_mensaje || "Sin mensajes",
+          lastMessageTime: conv.ultima_actividad
+            ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "",
+        }));
+
+        setChats(conversaciones);
+
+        if (conversaciones.length > 0 && !selectedChatId) {
+          setSelectedChatId(conversaciones[0].id);
         }
-        return chat;
-      }));
-      
-      setMessage('');
+      }
+    } catch (err) {
+      console.log("Error al cargar conversaciones:", err);
     }
   };
+
+  useEffect(() => {
+    if (userId) {
+      cargarConversaciones();
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (selectedChatId) {
+      cargarMensajes(selectedChatId);
+    }
+  }, [selectedChatId]);
+
+  const cargarMensajes = async (chatId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3001/chat/getMensajes/${chatId}`
+      );
+
+      if (res.data.ok) {
+        setMessages(res.data.mensajes || []);
+      }
+    } catch (err) {
+      console.log("Error al cargar mensajes:", err);
+    }
+  };
+
+  const [messageCount, setMessageCount] = useState(0);
+  useEffect(() => {
+    if (messages.length > messageCount) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setMessageCount(messages.length);
+    } else if (messageCount === 0 && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+      setMessageCount(messages.length);
+    }
+  }, [messages, messageCount]);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || !selectedChatId) return;
+
+    const messageData = {
+      chatId: selectedChatId,
+      content: message.trim(),
+      senderId: userId,
+    };
+
+    try {
+      const tempMessage = {
+        id_conversacion: selectedChatId,
+        contenido: message.trim(),
+        id_usuario: userId,
+        fecha_envio: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, tempMessage]);
+
+      await axios.post(`http://localhost:3001/chat/mensajes`, messageData);
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === selectedChatId
+            ? {
+                ...chat,
+                lastMessage: message.trim(),
+                lastMessageTime: new Date().toLocaleString("es-ES", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+              }
+            : chat
+        )
+      );
+
+      setMessage("");
+    } catch (err) {
+      console.log("Error al enviar mensaje:", err);
+    }
+  };
+
+  const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
   return (
     <div className="flex h-full bg-gray-100">
@@ -153,26 +241,39 @@ function Chatbot() {
                     </p>
                   </div>
                 </div>
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                  {selectedChat.messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${msg.isSender ? 'justify-end' : 'justify-start'}`}
-                    >
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                  {messages.map((msg, idx) => {
+                    const isSender = msg.id_usuario == userId;
+                    return (
                       <div
-                        className={`max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl rounded-lg p-3 ${
-                          msg.isSender
-                            ? 'bg-red-600 text-white'
-                            : 'bg-white text-gray-900'
-                        }`}
+                        key={idx}
+                        className={`flex ${isSender ? "justify-end" : "justify-start"}`}
                       >
-                        <p className="text-sm">{msg.content}</p>
-                        <p className={`text-xs mt-1 ${msg.isSender ? 'text-red-200' : 'text-gray-500'}`}>
-                          {msg.time}
-                        </p>
+                        <div
+                          className={`max-w-md rounded-lg p-3 ${
+                            isSender
+                              ? "bg-red-600 text-white"
+                              : "bg-white text-gray-900"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.contenido}</p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              isSender ? "text-red-200" : "text-gray-500"
+                            }`}
+                          >
+                            {msg.fecha_envio
+                              ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })
+                              : ""}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
                 <form
