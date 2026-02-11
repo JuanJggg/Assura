@@ -208,24 +208,42 @@ exports.enviarMensaje = async (req, res) => {
     console.log("✓ Notificación creada");
 
     console.log("4. Enviando evento Pusher al canal chat-" + chatId);
-    const pushResult1 = await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", {
+    console.log("   Canal:", `chat-${chatId}`);
+    console.log("   Evento:", "nuevo-mensaje");
+    const datosEvento = {
       id: mensajeGuardado.id,
       id_conversacion: chatId,
       contenido: content,
       remitente_id: senderId,
       remitente_tipo: senderType,
       fecha_envio: mensajeGuardado.fecha_envio,
-    });
-    console.log("✓ Evento 'nuevo-mensaje' enviado:", pushResult1);
+    };
+    console.log("   Datos:", JSON.stringify(datosEvento, null, 2));
+
+    try {
+      const pushResult1 = await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", datosEvento);
+      console.log("✓ Evento 'nuevo-mensaje' enviado EXITOSAMENTE");
+      console.log("   Respuesta Pusher:", JSON.stringify(pushResult1, null, 2));
+    } catch (pushError) {
+      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje':", pushError.message);
+      throw pushError;
+    }
 
     const canalReceptor = esAsesor ? `estudiante-${id_estudiante}` : `asesor-${id_asesor}`;
     console.log("5. Enviando notificación al canal:", canalReceptor);
+    console.log("   Canal:", canalReceptor);
+    console.log("   Evento:", "nuevo-mensaje-notificacion");
 
-    const pushResult2 = await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
-      id_conversacion: chatId,
-      mensaje: content,
-    });
-    console.log("✓ Evento 'nuevo-mensaje-notificacion' enviado:", pushResult2);
+    try {
+      const pushResult2 = await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
+        id_conversacion: chatId,
+        mensaje: content,
+      });
+      console.log("✓ Evento 'nuevo-mensaje-notificacion' enviado EXITOSAMENTE");
+      console.log("   Respuesta Pusher:", JSON.stringify(pushResult2, null, 2));
+    } catch (pushError) {
+      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje-notificacion':", pushError.message);
+    }
 
     console.log("====== MENSAJE ENVIADO EXITOSAMENTE ======\n");
 

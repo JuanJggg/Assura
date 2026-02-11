@@ -3,6 +3,7 @@
 const express = require("express");
 const router = express.Router();
 const chatController = require("../controllers/chat.controllers.cjs");
+const pusher = require("../config/pusher.cjs");
 
 // ============================================
 // RUTAS DE CHAT
@@ -37,5 +38,24 @@ router.get("/getMensajes/:id_conversacion", chatController.getMensajes);
  * Body: { chatId, content, senderId }
  */
 router.post("/mensajes", chatController.enviarMensaje);
+
+/**
+ * GET /chat/test-pusher
+ * Prueba la conexión de Pusher
+ */
+router.get("/test-pusher", async (req, res) => {
+  try {
+    console.log("🧪 Probando Pusher...");
+    const result = await pusher.trigger("test-channel", "test-event", {
+      mensaje: "Prueba desde el servidor",
+      timestamp: new Date().toISOString()
+    });
+    console.log("✅ Evento de prueba enviado:", JSON.stringify(result, null, 2));
+    res.json({ ok: true, message: "Evento enviado correctamente", result });
+  } catch (err) {
+    console.error("❌ Error en prueba Pusher:", err.message);
+    res.status(500).json({ ok: false, error: err.message, stack: err.stack });
+  }
+});
 
 module.exports = router;
