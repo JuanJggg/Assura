@@ -3,12 +3,16 @@ import Menu from "./../menu";
 import Header from "./../header";
 import axios from "axios";
 import pusher from "../../services/pusher";
+import AsesorSelector from "./AsesorSelector";
+import { Plus } from "lucide-react";
 
 function Chatstudy() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [showAsesorSelector, setShowAsesorSelector] = useState(false);
+  const [creatingConversation, setCreatingConversation] = useState(false);
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
@@ -72,6 +76,11 @@ function Chatstudy() {
 
     notificationChannel.bind("pusher:subscription_error", (err) => {
       console.error("❌ Error al suscribirse al canal estudiante-" + userId, err);
+    });
+
+    notificationChannel.bind("nueva-conversacion", (data) => {
+      console.log("🆕 Nueva conversación recibida:", data);
+      cargarConversaciones();
     });
 
     notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
@@ -224,6 +233,35 @@ function Chatstudy() {
     }
   };
 
+  const handleSelectAsesor = async (asesor) => {
+    setCreatingConversation(true);
+    try {
+      console.log("Creando conversación con asesor:", asesor.id);
+      const response = await axios.post("http://localhost:3001/chat/crearConversacion", {
+        id_estudiante: userId,
+        id_asesor: asesor.id
+      });
+
+      if (response.data.ok) {
+        console.log("Conversación creada/encontrada:", response.data.conversacion);
+
+        await cargarConversaciones();
+
+        setSelectedChatId(response.data.conversacion.id);
+        setShowAsesorSelector(false);
+
+        if (response.data.nuevo) {
+          console.log("Nueva conversación - enviando mensaje de bienvenida automático");
+        }
+      }
+    } catch (err) {
+      console.error("Error al crear conversación:", err);
+      alert("No se pudo iniciar la conversación. Intenta nuevamente.");
+    } finally {
+      setCreatingConversation(false);
+    }
+  };
+
   const selectedChat = chats.find(chat => chat.id === selectedChatId);
 
   return (
@@ -235,7 +273,16 @@ function Chatstudy() {
           {/* Lista de chats */}
           <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
+                <button
+                  onClick={() => setShowAsesorSelector(true)}
+                  className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                  title="Nuevo chat"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
             </div>
             <div className="divide-y divide-gray-200">
               {chats.length === 0 ? (
@@ -361,6 +408,22 @@ function Chatstudy() {
           </div>
         </div>
       </div>
+
+      {showAsesorSelector && (
+        <AsesorSelector
+          onClose={() => setShowAsesorSelector(false)}
+          onSelectAsesor={handleSelectAsesor}
+        />
+      )}
+
+      {creatingConversation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-red-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-700">Iniciando conversación...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

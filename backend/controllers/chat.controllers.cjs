@@ -55,6 +55,10 @@ exports.crearConversacion = async (req, res) => {
       conversacion: conversacionCompleta.rows[0],
     });
 
+    await pusher.trigger(`estudiante-${id_estudiante}`, "nueva-conversacion", {
+      conversacion: conversacionCompleta.rows[0],
+    });
+
     res.json({
       ok: true,
       conversacion: conversacionCompleta.rows[0],

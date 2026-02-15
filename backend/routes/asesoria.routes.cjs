@@ -9,4 +9,5 @@ router.post('/getAsesoria', materiasController.getAsesoria);
 router.post('/updActivo', materiasController.actualizarActivo);
 router.post('/delAsesoria', materiasController.eliminarAsesoria);
 router.post('/addMateria', materiasController.crearMateria);
+router.get('/getAsesoresDisponibles', materiasController.getAsesoresDisponibles);
 module.exports = router;
