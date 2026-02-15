@@ -17,6 +17,7 @@ function Chatstudy() {
   const [showCalificacion, setShowCalificacion] = useState(false);
   const [yaCalificado, setYaCalificado] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
   const selectedChatIdRef = useRef(selectedChatId);
@@ -176,12 +177,11 @@ function Chatstudy() {
   // Scroll al último mensaje solo cuando se agrega uno nuevo
   const [messageCount, setMessageCount] = useState(0);
   useEffect(() => {
-    if (messages.length > messageCount) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > messageCount && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
       setMessageCount(messages.length);
-    } else if (messageCount === 0 && messages.length > 0) {
-      // Solo hacer scroll si no había mensajes antes
-      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    } else if (messageCount === 0 && messages.length > 0 && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
       setMessageCount(messages.length);
     }
   }, [messages, messageCount]);
@@ -384,7 +384,7 @@ function Chatstudy() {
                     <span>{yaCalificado ? "Calificado" : "Calificar"}</span>
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
                     const isSender = msg.remitente_id == userId;
                     return (
