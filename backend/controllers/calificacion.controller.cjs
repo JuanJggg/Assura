@@ -38,8 +38,8 @@ exports.crearCalificacion = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO calificacion_asesor
        (id_estudiante, id_asesor, id_conversacion, puntualidad, claridad_explicacion,
-        dominio_tema, amabilidad, resolucion_dudas, calificacion_general, comentario)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        dominio_tema, amabilidad, resolucion_dudas, calificacion_general, comentario, valoration_calification_sesion)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         id_estudiante,
@@ -51,7 +51,8 @@ exports.crearCalificacion = async (req, res) => {
         amabilidad,
         resolucion_dudas,
         calificacion_general,
-        comentario || null
+        comentario || null,
+        calificacion_general
       ]
     );
 
