@@ -4,8 +4,7 @@ import Header from "./../header";
 import axios from "axios";
 import pusher from "../../services/pusher";
 import AsesorSelector from "./AsesorSelector";
-import FormularioCalificacion from "../calificacion/FormularioCalificacion";
-import { Plus, Star } from "lucide-react";
+import { Plus } from "lucide-react";
 
 function Chatstudy() {
   const [selectedChatId, setSelectedChatId] = useState(null);
@@ -14,10 +13,7 @@ function Chatstudy() {
   const [messages, setMessages] = useState([]);
   const [showAsesorSelector, setShowAsesorSelector] = useState(false);
   const [creatingConversation, setCreatingConversation] = useState(false);
-  const [showCalificacion, setShowCalificacion] = useState(false);
-  const [yaCalificado, setYaCalificado] = useState(false);
   const messagesEndRef = useRef(null);
-  const messagesContainerRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
   const selectedChatIdRef = useRef(selectedChatId);
@@ -27,9 +23,6 @@ function Chatstudy() {
 
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
-    if (selectedChatId && selectedChat) {
-      verificarCalificacion(selectedChatId, selectedChat.id_asesor);
-    }
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -177,11 +170,12 @@ function Chatstudy() {
   // Scroll al último mensaje solo cuando se agrega uno nuevo
   const [messageCount, setMessageCount] = useState(0);
   useEffect(() => {
-    if (messages.length > messageCount && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    if (messages.length > messageCount) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
       setMessageCount(messages.length);
-    } else if (messageCount === 0 && messages.length > 0 && messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    } else if (messageCount === 0 && messages.length > 0) {
+      // Solo hacer scroll si no había mensajes antes
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
       setMessageCount(messages.length);
     }
   }, [messages, messageCount]);
@@ -239,21 +233,6 @@ function Chatstudy() {
     }
   };
 
-  const verificarCalificacion = async (idConversacion, idAsesor) => {
-    try {
-      const response = await axios.get("http://localhost:3001/calificacion/verificar", {
-        params: {
-          id_estudiante: userId,
-          id_asesor: idAsesor,
-          id_conversacion: idConversacion
-        }
-      });
-      setYaCalificado(response.data.ya_calificado);
-    } catch (err) {
-      console.error("Error al verificar calificación:", err);
-    }
-  };
-
   const handleSelectAsesor = async (asesor) => {
     setCreatingConversation(true);
     try {
@@ -281,11 +260,6 @@ function Chatstudy() {
     } finally {
       setCreatingConversation(false);
     }
-  };
-
-  const handleCalificacionEnviada = () => {
-    setYaCalificado(true);
-    setShowCalificacion(false);
   };
 
   const selectedChat = chats.find(chat => chat.id === selectedChatId);
@@ -354,37 +328,22 @@ function Chatstudy() {
           <div className="flex-1 flex flex-col h-full">
             {selectedChat ? (
               <>
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                      <span className="text-red-600 font-semibold">
-                        {selectedChat.name?.[0]?.toUpperCase() || "?"}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {selectedChat.name || "Chat"}
-                      </h3>
-                      <p className="text-sm text-gray-500">
-                        {selectedChat.status || ""}
-                      </p>
-                    </div>
+                <div className="p-4 bg-white border-b border-gray-200 flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-red-600 font-semibold">
+                      {selectedChat.name?.[0]?.toUpperCase() || "?"}
+                    </span>
                   </div>
-                  <button
-                    onClick={() => setShowCalificacion(true)}
-                    disabled={yaCalificado}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      yaCalificado
-                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        : "bg-yellow-500 text-white hover:bg-yellow-600"
-                    }`}
-                    title={yaCalificado ? "Ya calificaste a este asesor" : "Calificar asesor"}
-                  >
-                    <Star size={18} fill={yaCalificado ? "none" : "currentColor"} />
-                    <span>{yaCalificado ? "Calificado" : "Calificar"}</span>
-                  </button>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {selectedChat.name || "Chat"}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {selectedChat.status || ""}
+                    </p>
+                  </div>
                 </div>
-                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
                     const isSender = msg.remitente_id == userId;
                     return (
@@ -454,17 +413,6 @@ function Chatstudy() {
         <AsesorSelector
           onClose={() => setShowAsesorSelector(false)}
           onSelectAsesor={handleSelectAsesor}
-        />
-      )}
-
-      {showCalificacion && selectedChat && (
-        <FormularioCalificacion
-          idEstudiante={userId}
-          idAsesor={selectedChat.id_asesor}
-          nombreAsesor={selectedChat.name}
-          idConversacion={selectedChatId}
-          onClose={() => setShowCalificacion(false)}
-          onCalificacionEnviada={handleCalificacionEnviada}
         />
       )}
 
