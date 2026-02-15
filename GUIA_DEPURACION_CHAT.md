@@ -1,19 +1,19 @@
 # Guía de Depuración del Sistema de Chat
 
-## 🔍 Cómo Verificar que Todo Funciona
+## Cómo Verificar que Todo Funciona
 
 Ahora el sistema tiene **logs detallados** en cada paso del proceso. Sigue estos pasos para identificar exactamente dónde está fallando.
 
 ---
 
-## 1️⃣ Preparación
+## 1 Preparación
 
 ### Abrir las Consolas de Desarrollo
 
 **En el Navegador del Estudiante:**
 1. Presiona `F12` o `Ctrl+Shift+I` (Windows/Linux) o `Cmd+Option+I` (Mac)
 2. Ve a la pestaña **Console**
-3. Limpia la consola (icono 🚫 o `Ctrl+L`)
+3. Limpia la consola (icono o `Ctrl+L`)
 
 **En el Navegador del Asesor:**
 1. Abre una ventana de incógnito o usa otro navegador
@@ -27,23 +27,23 @@ Ahora el sistema tiene **logs detallados** en cada paso del proceso. Sigue estos
 
 ---
 
-## 2️⃣ Verificar Conexión a Pusher
+## 2 Verificar Conexión a Pusher
 
 ### Cuando Cargues la Página del Chat
 
 **Deberías ver en la CONSOLA DEL NAVEGADOR:**
 
 ```
-🔧 Inicializando Pusher con:
+Inicializando Pusher con:
   Key: 76e3f9405cf16a0f3709
   Cluster: mt1
-✅ Pusher conectado exitosamente
+Pusher conectado exitosamente
    Socket ID: 123456.78901234
 ```
 
 **Si ves este error:**
 ```
-❌ Error de conexión Pusher: {...}
+Error de conexión Pusher: {...}
 ```
 
 **Solución:**
@@ -53,31 +53,31 @@ Ahora el sistema tiene **logs detallados** en cada paso del proceso. Sigue estos
 
 ---
 
-## 3️⃣ Verificar Suscripción a Canales
+## 3 Verificar Suscripción a Canales
 
 ### Cuando Selecciones un Chat
 
 **En la CONSOLA DEL ESTUDIANTE, deberías ver:**
 
 ```
-📡 Suscribiéndose al canal: chat-1
-✅ Suscripción exitosa al canal: chat-1
-📡 Suscribiéndose al canal de notificaciones: estudiante-123
-✅ Suscripción exitosa al canal: estudiante-123
+Suscribiéndose al canal: chat-1
+Suscripción exitosa al canal: chat-1
+Suscribiéndose al canal de notificaciones: estudiante-123
+Suscripción exitosa al canal: estudiante-123
 ```
 
 **En la CONSOLA DEL ASESOR, deberías ver:**
 
 ```
-📡 Suscribiéndose al canal: chat-1
-✅ Suscripción exitosa al canal: chat-1
-📡 Suscribiéndose al canal de notificaciones: asesor-456
-✅ Suscripción exitosa al canal: asesor-456
+Suscribiéndose al canal: chat-1
+Suscripción exitosa al canal: chat-1
+Suscribiéndose al canal de notificaciones: asesor-456
+Suscripción exitosa al canal: asesor-456
 ```
 
 **Si ves este error:**
 ```
-❌ Error al suscribirse al canal chat-1 {...}
+Error al suscribirse al canal chat-1 {...}
 ```
 
 **Solución:**
@@ -87,16 +87,16 @@ Ahora el sistema tiene **logs detallados** en cada paso del proceso. Sigue estos
 
 ---
 
-## 4️⃣ Enviar un Mensaje (ESTUDIANTE → ASESOR)
+## 4 Enviar un Mensaje (ESTUDIANTE → ASESOR)
 
 ### Paso 1: Estudiante Envía un Mensaje
 
 **En la CONSOLA DEL ESTUDIANTE:**
 
 ```
-📤 Enviando mensaje: {chatId: 1, content: "Hola", senderId: 123}
-➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes
-✅ Respuesta del backend: {ok: true, mensaje: {...}, message: "Mensaje enviado exitosamente"}
+Enviando mensaje: {chatId: 1, content: "Hola", senderId: 123}
+Llamando al backend: POST http://localhost:3001/chat/mensajes
+Respuesta del backend: {ok: true, mensaje: {...}, message: "Mensaje enviado exitosamente"}
 ```
 
 **En la TERMINAL DEL BACKEND:**
@@ -123,31 +123,31 @@ Datos recibidos: { chatId: 1, content: 'Hola', senderId: 123 }
 **En la CONSOLA DEL ASESOR:**
 
 ```
-📨 Mensaje recibido en chat-1: {id: 789, id_conversacion: 1, contenido: "Hola", id_usuario: 123, ...}
+Mensaje recibido en chat-1: {id: 789, id_conversacion: 1, contenido: "Hola", id_usuario: 123, ...}
    Usuario que envió: 123
    Usuario actual: 456
    ¿Es de otro usuario? true
-✅ Agregando mensaje a la lista
+Agregando mensaje a la lista
 ```
 
 **Y también:**
 
 ```
-🔔 Notificación de nuevo mensaje: {id_conversacion: 1, mensaje: "Hola"}
+Notificación de nuevo mensaje: {id_conversacion: 1, mensaje: "Hola"}
 ```
 
 ---
 
-## 5️⃣ Enviar una Respuesta (ASESOR → ESTUDIANTE)
+## 5 Enviar una Respuesta (ASESOR → ESTUDIANTE)
 
 ### Paso 1: Asesor Envía una Respuesta
 
 **En la CONSOLA DEL ASESOR:**
 
 ```
-📤 Enviando mensaje: {chatId: 1, content: "Hola, ¿en qué puedo ayudarte?", senderId: 456}
-➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes
-✅ Respuesta del backend: {ok: true, mensaje: {...}, message: "Mensaje enviado exitosamente"}
+Enviando mensaje: {chatId: 1, content: "Hola, ¿en qué puedo ayudarte?", senderId: 456}
+Llamando al backend: POST http://localhost:3001/chat/mensajes
+Respuesta del backend: {ok: true, mensaje: {...}, message: "Mensaje enviado exitosamente"}
 ```
 
 **En la TERMINAL DEL BACKEND:**
@@ -174,24 +174,24 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 **En la CONSOLA DEL ESTUDIANTE:**
 
 ```
-📨 Mensaje recibido en chat-1: {id: 790, id_conversacion: 1, contenido: "Hola, ¿en qué puedo ayudarte?", id_usuario: 456, ...}
+Mensaje recibido en chat-1: {id: 790, id_conversacion: 1, contenido: "Hola, ¿en qué puedo ayudarte?", id_usuario: 456, ...}
    Usuario que envió: 456
    Usuario actual: 123
    ¿Es de otro usuario? true
-✅ Agregando mensaje a la lista
+Agregando mensaje a la lista
 ```
 
 **Y también:**
 
 ```
-🔔 Notificación de nuevo mensaje: {id_conversacion: 1, mensaje: "Hola, ¿en qué puedo ayudarte?"}
+Notificación de nuevo mensaje: {id_conversacion: 1, mensaje: "Hola, ¿en qué puedo ayudarte?"}
 ```
 
 ---
 
-## 🚨 Problemas Comunes y Soluciones
+## Problemas Comunes y Soluciones
 
-### ❌ El backend no muestra logs al enviar mensaje
+### El backend no muestra logs al enviar mensaje
 
 **Problema:** No aparece "====== ENVIAR MENSAJE ======"
 
@@ -202,9 +202,9 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 2. Verifica que `VITE_BACKEND_URL` en `.env` sea `http://localhost:3001`
 3. Reinicia el frontend
 
-### ❌ Pusher no se conecta
+### Pusher no se conecta
 
-**Problema:** Ves `❌ Error de conexión Pusher`
+**Problema:** Ves `Error de conexión Pusher`
 
 **Causa:** Credenciales incorrectas o problemas de red
 
@@ -218,7 +218,7 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 3. Verifica tu conexión a internet
 4. Ve al [Dashboard de Pusher](https://dashboard.pusher.com/apps/2113838) y verifica que la app esté activa
 
-### ❌ Los eventos no llegan desde el backend
+### Los eventos no llegan desde el backend
 
 **Problema:** El backend muestra "✓ Evento enviado" pero el frontend no lo recibe
 
@@ -235,7 +235,7 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 2. Reinicia el backend
 3. Ve al [Debug Console de Pusher](https://dashboard.pusher.com/apps/2113838/getting_started) y verifica que los eventos aparezcan allí
 
-### ❌ Los mensajes se duplican
+### Los mensajes se duplican
 
 **Problema:** Ves el mismo mensaje dos veces
 
@@ -243,7 +243,7 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 
 **Solución:** Esto es esperado. El mensaje temporal aparece inmediatamente para dar feedback rápido al usuario.
 
-### ❌ Error "Conversación no encontrada"
+### Error "Conversación no encontrada"
 
 **Problema:** El backend responde con `404: Conversación no encontrada`
 
@@ -259,7 +259,7 @@ Datos recibidos: { chatId: 1, content: 'Hola, ¿en qué puedo ayudarte?', sender
 
 ---
 
-## 🔧 Herramientas de Depuración Adicionales
+## Herramientas de Depuración Adicionales
 
 ### 1. Debug Console de Pusher
 
@@ -298,25 +298,25 @@ SELECT * FROM chats_notificacion;
 
 ---
 
-## ✅ Checklist de Funcionamiento
+## Checklist de Funcionamiento
 
 Usa esta lista para verificar que todo está configurado correctamente:
 
 - [ ] Backend corriendo en `http://localhost:3001`
 - [ ] Frontend corriendo en `http://localhost:5173`
-- [ ] Pusher conectado (ves "✅ Pusher conectado exitosamente")
-- [ ] Canales suscritos (ves "✅ Suscripción exitosa al canal: chat-X")
+- [ ] Pusher conectado (ves "Pusher conectado exitosamente")
+- [ ] Canales suscritos (ves "Suscripción exitosa al canal: chat-X")
 - [ ] Al enviar mensaje, ves logs en consola del navegador
 - [ ] Al enviar mensaje, ves logs en terminal del backend
 - [ ] El mensaje se guarda en la BD (verifica con SQL)
 - [ ] El backend envía eventos de Pusher (ves "✓ Evento enviado")
 - [ ] Los eventos aparecen en el Debug Console de Pusher
-- [ ] El receptor recibe el mensaje (ves "📨 Mensaje recibido")
+- [ ] El receptor recibe el mensaje (ves "Mensaje recibido")
 - [ ] El mensaje aparece en la interfaz del receptor
 
 ---
 
-## 📞 Contacto de Soporte
+## Contacto de Soporte
 
 Si después de seguir todos estos pasos el chat sigue sin funcionar, proporciona:
 

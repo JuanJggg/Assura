@@ -158,7 +158,7 @@ exports.forgotPassword = async (req, res) => {
       },
     });
 
-    // 🔍 Probar conexión SMTP
+    // Probar conexión SMTP
     transporter.verify((error, success) => {
       if (error) {
         console.error("Error de conexión SMTP:", error);

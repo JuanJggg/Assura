@@ -28,35 +28,35 @@ function Chatstudy() {
   useEffect(() => {
     if (!selectedChatId) return;
 
-    console.log("📡 Suscribiéndose al canal: chat-" + selectedChatId);
+    console.log("Suscribiéndose al canal: chat-" + selectedChatId);
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
 
     channel.bind("pusher:subscription_succeeded", () => {
-      console.log("✅ Suscripción exitosa al canal: chat-" + selectedChatId);
+      console.log("Suscripción exitosa al canal: chat-" + selectedChatId);
     });
 
     channel.bind("pusher:subscription_error", (err) => {
-      console.error("❌ Error al suscribirse al canal chat-" + selectedChatId, err);
+      console.error("Error al suscribirse al canal chat-" + selectedChatId, err);
     });
 
     channel.bind("nuevo-mensaje", (data) => {
-      console.log("📨 Mensaje recibido en chat-" + selectedChatId + ":", data);
+      console.log("Mensaje recibido en chat-" + selectedChatId + ":", data);
       console.log("   Usuario que envió:", data.remitente_id);
       console.log("   Usuario actual:", userId);
       console.log("   ¿Es de otro usuario?", data.remitente_id != userId);
 
       if (data.remitente_id != userId) {
-        console.log("✅ Agregando mensaje a la lista");
+        console.log("Agregando mensaje a la lista");
         setMessages(prev => [...prev, data]);
       } else {
-        console.log("⏭️ Mensaje propio, ignorando (ya está en la lista)");
+        console.log("Mensaje propio, ignorando (ya está en la lista)");
       }
     });
 
     return () => {
       if (channelRef.current) {
-        console.log("🔌 Desuscribiéndose del canal: chat-" + selectedChatId);
+        console.log("Desuscribiéndose del canal: chat-" + selectedChatId);
         channelRef.current.unbind_all();
         pusher.unsubscribe(`chat-${selectedChatId}`);
       }
@@ -66,41 +66,41 @@ function Chatstudy() {
   useEffect(() => {
     if (!userId) return;
 
-    console.log("📡 Suscribiéndose al canal de notificaciones: estudiante-" + userId);
+    console.log("Suscribiéndose al canal de notificaciones: estudiante-" + userId);
     const notificationChannel = pusher.subscribe(`estudiante-${userId}`);
     notificationChannelRef.current = notificationChannel;
 
     notificationChannel.bind("pusher:subscription_succeeded", () => {
-      console.log("✅ Suscripción exitosa al canal: estudiante-" + userId);
+      console.log("Suscripción exitosa al canal: estudiante-" + userId);
     });
 
     notificationChannel.bind("pusher:subscription_error", (err) => {
-      console.error("❌ Error al suscribirse al canal estudiante-" + userId, err);
+      console.error("Error al suscribirse al canal estudiante-" + userId, err);
     });
 
     notificationChannel.bind("nueva-conversacion", (data) => {
-      console.log("🆕 Nueva conversación recibida:", data);
+      console.log("Nueva conversación recibida:", data);
       cargarConversaciones();
     });
 
     notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
-      console.log("🔔 Notificación de nuevo mensaje:", data);
+      console.log("Notificación de nuevo mensaje:", data);
       console.log("   ID conversación recibida:", data.id_conversacion);
       console.log("   ID conversación actual:", selectedChatIdRef.current);
 
       cargarConversaciones();
 
       if (data.id_conversacion == selectedChatIdRef.current) {
-        console.log("✅ Es el chat actual, recargando mensajes...");
+        console.log("Es el chat actual, recargando mensajes...");
         cargarMensajes(selectedChatIdRef.current);
       } else {
-        console.log("ℹ️ No es el chat actual, solo se actualiza la lista");
+        console.log("No es el chat actual, solo se actualiza la lista");
       }
     });
 
     return () => {
       if (notificationChannelRef.current) {
-        console.log("🔌 Desuscribiéndose del canal: estudiante-" + userId);
+        console.log("Desuscribiéndose del canal: estudiante-" + userId);
         notificationChannelRef.current.unbind_all();
         pusher.unsubscribe(`estudiante-${userId}`);
       }
@@ -190,7 +190,7 @@ function Chatstudy() {
       senderId: userId
     };
 
-    console.log("📤 Enviando mensaje:", messageData);
+    console.log("Enviando mensaje:", messageData);
 
     try {
       const tempMessage = {
@@ -202,12 +202,12 @@ function Chatstudy() {
       };
       setMessages(prev => [...prev, tempMessage]);
 
-      console.log("➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes");
+      console.log("Llamando al backend: POST http://localhost:3001/chat/mensajes");
       const response = await axios.post(
         `http://localhost:3001/chat/mensajes`,
         messageData
       );
-      console.log("✅ Respuesta del backend:", response.data);
+      console.log("Respuesta del backend:", response.data);
 
       setChats(prevChats =>
         prevChats.map(chat =>
@@ -228,7 +228,7 @@ function Chatstudy() {
 
       setMessage("");
     } catch (err) {
-      console.error("❌ Error al enviar mensaje:", err);
+      console.error("Error al enviar mensaje:", err);
       console.error("Detalles:", err.response?.data || err.message);
     }
   };

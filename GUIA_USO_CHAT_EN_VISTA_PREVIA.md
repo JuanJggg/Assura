@@ -1,6 +1,6 @@
 # Guía de Uso: Sistema de Chat en Vista Previa
 
-## ¡Listo para Usar! 🎉
+## ¡Listo para Usar!
 
 El sistema de chat ahora está completamente funcional en la vista previa de la plataforma. Ya NO necesitas el backend local (Node.js).
 
@@ -18,15 +18,15 @@ Todo el backend del chat se ha movido a **Supabase Edge Functions**, que funcion
 ## ¿Cómo Funciona Ahora?
 
 ### Sin Backend Local
-- ❌ Ya NO necesitas ejecutar `cd backend && node index.cjs`
-- ❌ Ya NO necesitas tener el puerto 3001 abierto
-- ✅ Todo funciona directamente desde la vista previa
+- Ya NO necesitas ejecutar `cd backend && node index.cjs`
+- Ya NO necesitas tener el puerto 3001 abierto
+- Todo funciona directamente desde la vista previa
 
 ### Con Supabase Edge Functions
-- ✅ Las funciones se ejecutan automáticamente en la nube
-- ✅ Pusher está configurado y funcionando
-- ✅ Los mensajes se sincronizan en tiempo real
-- ✅ Las conversaciones se cargan dinámicamente
+- Las funciones se ejecutan automáticamente en la nube
+- Pusher está configurado y funcionando
+- Los mensajes se sincronizan en tiempo real
+- Las conversaciones se cargan dinámicamente
 
 ## URLs de las Edge Functions
 
@@ -207,22 +207,22 @@ const corsHeaders = {
 
 ## Ventajas de Esta Configuración
 
-✅ **Sin Backend Local**
+**Sin Backend Local**
 - No necesitas Node.js corriendo
 - No necesitas configurar puertos
 - No hay conflictos con localhost
 
-✅ **Totalmente en la Nube**
+**Totalmente en la Nube**
 - Funciona desde cualquier dispositivo
 - Escalable automáticamente
 - Sin mantenimiento de servidor
 
-✅ **Tiempo Real**
+**Tiempo Real**
 - Pusher maneja la sincronización
 - Los mensajes llegan instantáneamente
 - Las listas se actualizan automáticamente
 
-✅ **Vista Previa Funcional**
+**Vista Previa Funcional**
 - Puedes probar todo directamente en la plataforma
 - Compartir el link de vista previa con otros
 - Demostrar el proyecto sin complicaciones
@@ -249,7 +249,7 @@ const corsHeaders = {
 
 ## Resumen
 
-🎉 **¡Todo está listo!**
+**¡Todo está listo!**
 
 - El sistema de chat funciona completamente en la vista previa
 - No necesitas backend local
