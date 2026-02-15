@@ -224,9 +224,9 @@ function Chatbot() {
   const selectedChat = chats.find((chat) => chat.id === selectedChatId);
 
   return (
-    <div className="flex h-full bg-gray-100 overflow-hidden">
+    <div className="flex h-full bg-gray-100 overflow-hidden min-h-0">
           {/* Lista de chats */}
-          <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+          <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden min-h-0">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-xl font-semibold text-gray-800">Chats con Estudiantes</h2>
             </div>
@@ -271,7 +271,7 @@ function Chatbot() {
           </div>
 
           {/* Ventana de chat */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {selectedChat ? (
               <>
                 <div className="p-4 bg-white border-b border-gray-200 flex items-center space-x-4 flex-shrink-0">

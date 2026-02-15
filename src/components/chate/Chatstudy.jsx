@@ -265,13 +265,13 @@ function Chatstudy() {
   const selectedChat = chats.find(chat => chat.id === selectedChatId);
 
   return (
-    <div className="flex flex-col h-screen font-sans overflow-hidden">
+    <div className="flex flex-col h-screen font-sans">
       <Header />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <Menu />
-        <div className="flex flex-1 bg-gray-100 overflow-hidden">
+        <div className="flex flex-1 bg-gray-100 overflow-hidden min-h-0">
           {/* Lista de chats */}
-          <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+          <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden min-h-0">
             <div className="p-4 border-b border-gray-200 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
@@ -325,7 +325,7 @@ function Chatstudy() {
           </div>
 
           {/* Ventana de chat */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             {selectedChat ? (
               <>
                 <div className="p-4 bg-white border-b border-gray-200 flex items-center space-x-4 flex-shrink-0">
