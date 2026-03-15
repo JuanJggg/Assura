@@ -219,3 +219,32 @@ exports.crearMateria = async (req, res) => {
         });
     }
 };
+
+exports.getAsesoresDisponibles = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT DISTINCT
+                a.id,
+                a.nombres,
+                a.apellidos,
+                a.email,
+                a.telefono,
+                a.carrera,
+                COUNT(DISTINCT am.materia_id) as total_materias,
+                STRING_AGG(DISTINCT m.nombre, ', ') as materias
+            FROM public.asesor a
+            LEFT JOIN public.asesor_materia am ON a.id = am.asesor_id
+            LEFT JOIN public.materia m ON am.materia_id = m.id
+            WHERE am.activa = 'S'
+            GROUP BY a.id, a.nombres, a.apellidos, a.email, a.telefono, a.carrera
+            ORDER BY a.nombres, a.apellidos
+        `);
+        res.json({ ok: true, asesores: result.rows });
+    } catch (error) {
+        console.error("Error al obtener asesores disponibles:", error);
+        res.status(500).json({
+            ok: false,
+            error: "Error al obtener asesores disponibles"
+        });
+    }
+};

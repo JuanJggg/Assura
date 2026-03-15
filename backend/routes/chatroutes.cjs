@@ -3,6 +3,7 @@
 const express = require("express");
 const router = express.Router();
 const chatController = require("../controllers/chat.controllers.cjs");
+const pusher = require("../config/pusher.cjs");
 
 // ============================================
 // RUTAS DE CHAT
@@ -33,37 +34,27 @@ router.get("/getMensajes/:id_conversacion", chatController.getMensajes);
 
 /**
  * POST /chat/mensajes
- * Guarda un nuevo mensaje (usado junto con socket.io)
+ * Envía un nuevo mensaje (guarda en DB y dispara evento de Pusher)
  * Body: { chatId, content, senderId }
  */
-router.post("/mensajes", async (req, res) => {
+router.post("/mensajes", chatController.enviarMensaje);
+
+/**
+ * GET /chat/test-pusher
+ * Prueba la conexión de Pusher
+ */
+router.get("/test-pusher", async (req, res) => {
   try {
-    const { chatId, content, senderId } = req.body;
-    
-    if (!chatId || !content || !senderId) {
-      return res.status(400).json({ 
-        error: "Faltan datos requeridos",
-        required: ["chatId", "content", "senderId"]
-      });
-    }
-
-    const mensaje = await chatController.guardarMensaje({
-      chatId,
-      content,
-      senderId
+    console.log("🧪 Probando Pusher...");
+    const result = await pusher.trigger("test-channel", "test-event", {
+      mensaje: "Prueba desde el servidor",
+      timestamp: new Date().toISOString()
     });
-
-    res.json({ 
-      ok: true, 
-      mensaje,
-      message: "Mensaje guardado exitosamente"
-    });
+    console.log("✅ Evento de prueba enviado:", JSON.stringify(result, null, 2));
+    res.json({ ok: true, message: "Evento enviado correctamente", result });
   } catch (err) {
-    console.error("Error en ruta /mensajes:", err);
-    res.status(500).json({ 
-      error: "Error al guardar mensaje",
-      details: err.message 
-    });
+    console.error("❌ Error en prueba Pusher:", err.message);
+    res.status(500).json({ ok: false, error: err.message, stack: err.stack });
   }
 });
 

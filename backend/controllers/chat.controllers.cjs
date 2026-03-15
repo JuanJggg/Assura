@@ -1,4 +1,5 @@
 const pool = require("../config/db.cjs");
+const pusher = require("../config/pusher.cjs");
 
 exports.crearConversacion = async (req, res) => {
   const id_estudiante = req.body.id_estudiante || req.body.idUsuario;
@@ -49,11 +50,19 @@ exports.crearConversacion = async (req, res) => {
     );
     
     console.log("Nueva conversación creada:", conversacionCompleta.rows[0]);
-    
-    res.json({ 
-      ok: true, 
+
+    await pusher.trigger(`asesor-${id_asesor}`, "nueva-conversacion", {
       conversacion: conversacionCompleta.rows[0],
-      nuevo: true 
+    });
+
+    await pusher.trigger(`estudiante-${id_estudiante}`, "nueva-conversacion", {
+      conversacion: conversacionCompleta.rows[0],
+    });
+
+    res.json({
+      ok: true,
+      conversacion: conversacionCompleta.rows[0],
+      nuevo: true
     });
   } catch (err) {
     console.error("Error al crear conversacion:", err);
@@ -73,40 +82,52 @@ exports.crearConversacion = async (req, res) => {
 
 exports.getConversacion = async (req, res) => {
   const { tipo, id } = req.params;
-  
+
+  console.log(`\n🔍 OBTENER CONVERSACIONES - Tipo: ${tipo}, ID: ${id}`);
+
   try {
     let query;
     if (tipo === "estudiante") {
-      query = `SELECT c.*, 
-               a.nombres AS asesor_nombre, 
+      query = `SELECT c.*,
+               a.nombres AS asesor_nombre,
                a.apellidos AS asesor_apellido,
                a.telefono AS asesor_telefono,
                '' AS asesor_materia,
-               (SELECT contenido FROM chat_mensaje 
-                WHERE id_conversacion = c.id 
+               (SELECT contenido FROM chat_mensaje
+                WHERE id_conversacion = c.id
                 ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
        FROM chats_conversacion c
        JOIN asesor a ON c.id_asesor = a.id
        WHERE c.id_estudiante = $1
        ORDER BY c.ultima_actividad DESC`;
     } else {
-      query = `SELECT c.*, 
-               e.nombres AS estudiante_nombre, 
+      query = `SELECT c.*,
+               e.nombres AS estudiante_nombre,
                e.apellidos AS estudiante_apellido,
-               (SELECT contenido FROM chat_mensaje 
-                WHERE id_conversacion = c.id 
+               (SELECT contenido FROM chat_mensaje
+                WHERE id_conversacion = c.id
                 ORDER BY fecha_envio DESC LIMIT 1) as ultimo_mensaje
        FROM chats_conversacion c
        JOIN estudiante e ON c.id_estudiante = e.id
        WHERE c.id_asesor = $1
        ORDER BY c.ultima_actividad DESC`;
     }
-    
+
+    console.log(`📋 Query a ejecutar:\n${query}`);
+    console.log(`📋 Con parámetro ID: ${id}`);
+
     const result = await pool.query(query, [id]);
+
+    console.log(`✅ Conversaciones encontradas: ${result.rows.length}`);
+    if (result.rows.length > 0) {
+      console.log(`📝 Primera conversación:`, result.rows[0]);
+    }
+
     res.json({ ok: true, conversaciones: result.rows });
   } catch (err) {
-    console.error("Error al obtener conversacion:", err);
-    res.status(500).json({ error: "Error al obtener conversacion" });
+    console.error("❌ Error al obtener conversacion:", err);
+    console.error("   Detalles:", err.message);
+    res.status(500).json({ error: "Error al obtener conversacion", details: err.message });
   }
 };
 
@@ -128,25 +149,132 @@ exports.getMensajes = async (req, res) => {
 };
 
 exports.guardarMensaje = async (data) => {
-  const { chatId, content, senderId } = data;
-  
+  const { chatId, content, senderId, senderType } = data;
+
   try {
-    // Primero intentamos con el nombre probable de la columna
     const result = await pool.query(
-      `INSERT INTO chat_mensaje (id_conversacion, contenido, id_usuario, fecha_envio) 
-       VALUES ($1, $2, $3, NOW()) RETURNING *`,
-      [chatId, content, senderId]
+      `INSERT INTO chat_mensaje (id_conversacion, contenido, remitente_id, remitente_tipo, fecha_envio, leido)
+       VALUES ($1, $2, $3, $4, NOW(), false) RETURNING *`,
+      [chatId, content, senderId, senderType]
     );
-    
-    // Actualizar última actividad
+
     await pool.query(
       "UPDATE chats_conversacion SET ultima_actividad = NOW() WHERE id = $1",
       [chatId]
     );
-    
+
     return result.rows[0];
   } catch (err) {
     console.error("Error al guardar mensaje:", err);
     throw err;
+  }
+};
+
+exports.enviarMensaje = async (req, res) => {
+  const { chatId, content, senderId } = req.body;
+
+  console.log("====== ENVIAR MENSAJE ======");
+  console.log("Datos recibidos:", { chatId, content, senderId });
+
+  if (!chatId || !content || !senderId) {
+    return res.status(400).json({
+      error: "Faltan datos requeridos",
+      required: ["chatId", "content", "senderId"]
+    });
+  }
+
+  try {
+    console.log("1. Obteniendo datos de conversación...");
+    const conversacion = await pool.query(
+      "SELECT id_estudiante, id_asesor FROM chats_conversacion WHERE id = $1",
+      [chatId]
+    );
+
+    if (conversacion.rows.length === 0) {
+      return res.status(404).json({ error: "Conversación no encontrada" });
+    }
+
+    const { id_estudiante, id_asesor } = conversacion.rows[0];
+    console.log("✓ Conversación encontrada:", { id_estudiante, id_asesor });
+
+    // Determinar si el remitente es estudiante o asesor
+    const esAsesor = senderId == id_asesor;
+    const senderType = esAsesor ? 'asesor' : 'estudiante';
+    console.log("✓ Tipo de remitente identificado:", senderType);
+
+    console.log("2. Guardando mensaje en BD...");
+    const mensajeGuardado = await exports.guardarMensaje({
+      chatId,
+      content,
+      senderId,
+      senderType
+    });
+    console.log("✓ Mensaje guardado:", mensajeGuardado);
+
+    const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
+    const receptorTipo = esAsesor ? 'estudiante' : 'asesor';
+    console.log("✓ Receptor identificado:", receptorId, "tipo:", receptorTipo);
+
+    console.log("3. Creando notificación...");
+    await pool.query(
+      `INSERT INTO chat_notificacion (id_mensaje, usuario_id, usuario_tipo, leido, fecha)
+       VALUES ($1, $2, $3, false, NOW())`,
+      [mensajeGuardado.id, receptorId, receptorTipo]
+    );
+    console.log("✓ Notificación creada");
+
+    console.log("4. Enviando evento Pusher al canal chat-" + chatId);
+    console.log("   Canal:", `chat-${chatId}`);
+    console.log("   Evento:", "nuevo-mensaje");
+    const datosEvento = {
+      id: mensajeGuardado.id,
+      id_conversacion: chatId,
+      contenido: content,
+      remitente_id: senderId,
+      remitente_tipo: senderType,
+      fecha_envio: mensajeGuardado.fecha_envio,
+    };
+    console.log("   Datos:", JSON.stringify(datosEvento, null, 2));
+
+    try {
+      const pushResult1 = await pusher.trigger(`chat-${chatId}`, "nuevo-mensaje", datosEvento);
+      console.log("✓ Evento 'nuevo-mensaje' enviado EXITOSAMENTE");
+      console.log("   Respuesta Pusher:", JSON.stringify(pushResult1, null, 2));
+    } catch (pushError) {
+      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje':", pushError.message);
+      throw pushError;
+    }
+
+    const canalReceptor = esAsesor ? `estudiante-${id_estudiante}` : `asesor-${id_asesor}`;
+    console.log("5. Enviando notificación al canal:", canalReceptor);
+    console.log("   Canal:", canalReceptor);
+    console.log("   Evento:", "nuevo-mensaje-notificacion");
+
+    try {
+      const pushResult2 = await pusher.trigger(canalReceptor, "nuevo-mensaje-notificacion", {
+        id_conversacion: chatId,
+        mensaje: content,
+      });
+      console.log("✓ Evento 'nuevo-mensaje-notificacion' enviado EXITOSAMENTE");
+      console.log("   Respuesta Pusher:", JSON.stringify(pushResult2, null, 2));
+    } catch (pushError) {
+      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje-notificacion':", pushError.message);
+    }
+
+    console.log("====== MENSAJE ENVIADO EXITOSAMENTE ======\n");
+
+    res.json({
+      ok: true,
+      mensaje: mensajeGuardado,
+      message: "Mensaje enviado exitosamente"
+    });
+  } catch (err) {
+    console.error("❌ ERROR al enviar mensaje:", err);
+    console.error("Detalles:", err.message);
+    console.error("Stack:", err.stack);
+    res.status(500).json({
+      error: "Error al enviar mensaje",
+      details: err.message
+    });
   }
 };

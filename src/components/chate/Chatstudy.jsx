@@ -2,100 +2,157 @@ import React, { useState, useRef, useEffect } from "react";
 import Menu from "./../menu";
 import Header from "./../header";
 import axios from "axios";
-import { io } from "socket.io-client";
+import pusher from "../../services/pusher";
+import AsesorSelector from "./AsesorSelector";
+import { Plus } from "lucide-react";
 
 function Chatstudy() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [showAsesorSelector, setShowAsesorSelector] = useState(false);
+  const [creatingConversation, setCreatingConversation] = useState(false);
   const messagesEndRef = useRef(null);
-  const socketRef = useRef(null);
-  
-  // Obtener userId del localStorage
+  const channelRef = useRef(null);
+  const notificationChannelRef = useRef(null);
+  const selectedChatIdRef = useRef(selectedChatId);
+
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
 
-  // Conectar socket
   useEffect(() => {
-    socketRef.current = io("http://localhost:3001", {
-      transports: ["websocket", "polling"],
+    selectedChatIdRef.current = selectedChatId;
+  }, [selectedChatId]);
+
+  useEffect(() => {
+    if (!selectedChatId) return;
+
+    console.log("Suscribiéndose al canal: chat-" + selectedChatId);
+    const channel = pusher.subscribe(`chat-${selectedChatId}`);
+    channelRef.current = channel;
+
+    channel.bind("pusher:subscription_succeeded", () => {
+      console.log("Suscripción exitosa al canal: chat-" + selectedChatId);
     });
 
-    socketRef.current.on("connect", () => {
-      console.log("Socket conectado");
+    channel.bind("pusher:subscription_error", (err) => {
+      console.error("Error al suscribirse al canal chat-" + selectedChatId, err);
     });
 
-    socketRef.current.on("mensaje", (data) => {
-      console.log("Mensaje recibido:", data);
-      // Si el mensaje es de la conversación actual, agregarlo
-      if (selectedChatId && data.id_conversacion === selectedChatId) {
+    channel.bind("nuevo-mensaje", (data) => {
+      console.log("Mensaje recibido en chat-" + selectedChatId + ":", data);
+      console.log("Usuario que envió:", data.remitente_id);
+      console.log("Usuario actual:", userId);
+      console.log("¿Es de otro usuario?", data.remitente_id != userId);
+
+      if (data.remitente_id != userId) {
+        console.log("Agregando mensaje a la lista");
         setMessages(prev => [...prev, data]);
+      } else {
+        console.log("Mensaje propio, ignorando (ya está en la lista)");
       }
     });
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (channelRef.current) {
+        console.log("Desuscribiéndose del canal: chat-" + selectedChatId);
+        channelRef.current.unbind_all();
+        pusher.unsubscribe(`chat-${selectedChatId}`);
       }
     };
-  }, [selectedChatId]);
+  }, [selectedChatId, userId]);
 
-  // Cargar conversaciones al montar
   useEffect(() => {
-    const cargarConversaciones = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
-        );
+    if (!userId) return;
 
-        if (res.data.ok) {
-          const conversaciones = res.data.conversaciones.map(conv => ({
-            id: conv.id,
-            name: `${conv.asesor_nombre} ${conv.asesor_apellido}`,
-            status: conv.asesor_materia,
-            telefono: conv.asesor_telefono,
-            lastMessage: conv.ultimo_mensaje || "Sin mensajes",
-            lastMessageTime: conv.ultima_actividad 
-              ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })
-              : ""
-          }));
-          
-          setChats(conversaciones);
-          
-          // Si hay conversaciones, seleccionar la primera
-          if (conversaciones.length > 0) {
-            setSelectedChatId(conversaciones[0].id);
-          }
-        }
-      } catch (err) {
-        console.log("Error al cargar conversaciones:", err);
+    console.log("Suscribiéndose al canal de notificaciones: estudiante-" + userId);
+    const notificationChannel = pusher.subscribe(`estudiante-${userId}`);
+    notificationChannelRef.current = notificationChannel;
+
+    notificationChannel.bind("pusher:subscription_succeeded", () => {
+      console.log("Suscripción exitosa al canal: estudiante-" + userId);
+    });
+
+    notificationChannel.bind("pusher:subscription_error", (err) => {
+      console.error("Error al suscribirse al canal estudiante-" + userId, err);
+    });
+
+    notificationChannel.bind("nueva-conversacion", (data) => {
+      console.log("Nueva conversación recibida:", data);
+      cargarConversaciones();
+    });
+
+    notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
+      console.log("Notificación de nuevo mensaje:", data);
+      console.log("ID conversación recibida:", data.id_conversacion);
+      console.log("ID conversación actual:", selectedChatIdRef.current);
+
+      cargarConversaciones();
+
+      if (data.id_conversacion == selectedChatIdRef.current) {
+        console.log("Es el chat actual, recargando mensajes...");
+        cargarMensajes(selectedChatIdRef.current);
+      } else {
+        console.log("No es el chat actual, solo se actualiza la lista");
+      }
+    });
+
+    return () => {
+      if (notificationChannelRef.current) {
+        console.log("Desuscribiéndose del canal: estudiante-" + userId);
+        notificationChannelRef.current.unbind_all();
+        pusher.unsubscribe(`estudiante-${userId}`);
       }
     };
+  }, [userId]);
 
+  const cargarConversaciones = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3001/chat/getConversacion/estudiante/${userId}`
+      );
+
+      if (res.data.ok) {
+        const conversaciones = res.data.conversaciones.map(conv => ({
+          id: conv.id,
+          name: `${conv.asesor_nombre} ${conv.asesor_apellido}`,
+          status: conv.asesor_materia,
+          telefono: conv.asesor_telefono,
+          lastMessage: conv.ultimo_mensaje || "Sin mensajes",
+          lastMessageTime: conv.ultima_actividad
+            ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              })
+            : ""
+        }));
+
+        setChats(conversaciones);
+
+        if (conversaciones.length > 0 && !selectedChatId) {
+          setSelectedChatId(conversaciones[0].id);
+        }
+      }
+    } catch (err) {
+      console.log("Error al cargar conversaciones:", err);
+    }
+  };
+
+  useEffect(() => {
     if (userId) {
       cargarConversaciones();
     }
   }, [userId]);
 
-  // Cargar mensajes cuando se selecciona un chat
   useEffect(() => {
     if (selectedChatId) {
       cargarMensajes(selectedChatId);
-      
-      // Unirse a la sala del socket
-      if (socketRef.current) {
-        socketRef.current.emit("unirse", { chatId: selectedChatId });
-      }
     }
   }, [selectedChatId]);
 
-  // Cargar mensajes de una conversación
   const cargarMensajes = async (chatId) => {
     try {
       const res = await axios.get(
@@ -133,28 +190,25 @@ function Chatstudy() {
       senderId: userId
     };
 
+    console.log("📤 Enviando mensaje:", messageData);
+
     try {
-      // Agregar mensaje localmente (optimistic update)
       const tempMessage = {
         id_conversacion: selectedChatId,
         contenido: message.trim(),
-        id_remitente: userId,
+        remitente_id: userId,
+        remitente_tipo: 'estudiante',
         fecha_envio: new Date().toISOString()
       };
       setMessages(prev => [...prev, tempMessage]);
 
-      // Enviar por socket
-      if (socketRef.current) {
-        socketRef.current.emit("mensaje", messageData);
-      }
-
-      // Guardar en BD
-      await axios.post(
+      console.log("➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes");
+      const response = await axios.post(
         `http://localhost:3001/chat/mensajes`,
         messageData
       );
+      console.log("✅ Respuesta del backend:", response.data);
 
-      // Actualizar último mensaje en la lista de chats
       setChats(prevChats =>
         prevChats.map(chat =>
           chat.id === selectedChatId
@@ -174,7 +228,37 @@ function Chatstudy() {
 
       setMessage("");
     } catch (err) {
-      console.log("Error al enviar mensaje:", err);
+      console.error("❌ Error al enviar mensaje:", err);
+      console.error("Detalles:", err.response?.data || err.message);
+    }
+  };
+
+  const handleSelectAsesor = async (asesor) => {
+    setCreatingConversation(true);
+    try {
+      console.log("Creando conversación con asesor:", asesor.id);
+      const response = await axios.post("http://localhost:3001/chat/crearConversacion", {
+        id_estudiante: userId,
+        id_asesor: asesor.id
+      });
+
+      if (response.data.ok) {
+        console.log("Conversación creada/encontrada:", response.data.conversacion);
+
+        await cargarConversaciones();
+
+        setSelectedChatId(response.data.conversacion.id);
+        setShowAsesorSelector(false);
+
+        if (response.data.nuevo) {
+          console.log("Nueva conversación - enviando mensaje de bienvenida automático");
+        }
+      }
+    } catch (err) {
+      console.error("Error al crear conversación:", err);
+      alert("No se pudo iniciar la conversación. Intenta nuevamente.");
+    } finally {
+      setCreatingConversation(false);
     }
   };
 
@@ -189,7 +273,16 @@ function Chatstudy() {
           {/* Lista de chats */}
           <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
             <div className="p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
+                <button
+                  onClick={() => setShowAsesorSelector(true)}
+                  className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                  title="Nuevo chat"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
             </div>
             <div className="divide-y divide-gray-200">
               {chats.length === 0 ? (
@@ -252,7 +345,7 @@ function Chatstudy() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {messages.map((msg, idx) => {
-                    const isSender = (msg.id_remitente == userId) || (msg.id_usuario == userId);
+                    const isSender = msg.remitente_id == userId;
                     return (
                       <div
                         key={idx}
@@ -271,7 +364,7 @@ function Chatstudy() {
                               isSender ? "text-red-200" : "text-gray-500"
                             }`}
                           >
-                            {msg.fecha_envio 
+                            {msg.fecha_envio
                               ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", {
                                   hour: "2-digit",
                                   minute: "2-digit",
@@ -315,6 +408,22 @@ function Chatstudy() {
           </div>
         </div>
       </div>
+
+      {showAsesorSelector && (
+        <AsesorSelector
+          onClose={() => setShowAsesorSelector(false)}
+          onSelectAsesor={handleSelectAsesor}
+        />
+      )}
+
+      {creatingConversation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-red-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-700">Iniciando conversación...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
