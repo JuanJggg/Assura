@@ -45,15 +45,15 @@ router.post("/mensajes", chatController.enviarMensaje);
  */
 router.get("/test-pusher", async (req, res) => {
   try {
-    console.log("🧪 Probando Pusher...");
+    console.log("Probando Pusher...");
     const result = await pusher.trigger("test-channel", "test-event", {
       mensaje: "Prueba desde el servidor",
       timestamp: new Date().toISOString()
     });
-    console.log("✅ Evento de prueba enviado:", JSON.stringify(result, null, 2));
+    console.log("Evento de prueba enviado:", JSON.stringify(result, null, 2));
     res.json({ ok: true, message: "Evento enviado correctamente", result });
   } catch (err) {
-    console.error("❌ Error en prueba Pusher:", err.message);
+    console.error("Error en prueba Pusher:", err.message);
     res.status(500).json({ ok: false, error: err.message, stack: err.stack });
   }
 });

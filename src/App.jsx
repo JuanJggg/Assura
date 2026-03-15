@@ -88,7 +88,7 @@ function App() {
       console.log("Respuesta completa del servidor:", res.data);
 
       if (res.data.ok) {
-        console.log("✅ Conversación creada exitosamente");
+        console.log("Conversación creada exitosamente");
         console.log("ID de conversación:", res.data.conversacion.id);
         
         // Redirigir al chat
@@ -99,7 +99,7 @@ function App() {
           } 
         });
       } else {
-        console.error("❌ Respuesta no exitosa:", res.data);
+        console.error("Respuesta no exitosa:", res.data);
         alert("No se pudo crear la conversación");
       }
     } catch (err) {

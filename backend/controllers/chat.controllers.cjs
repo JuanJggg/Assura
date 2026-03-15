@@ -83,7 +83,7 @@ exports.crearConversacion = async (req, res) => {
 exports.getConversacion = async (req, res) => {
   const { tipo, id } = req.params;
 
-  console.log(`\n🔍 OBTENER CONVERSACIONES - Tipo: ${tipo}, ID: ${id}`);
+  console.log(`\n OBTENER CONVERSACIONES - Tipo: ${tipo}, ID: ${id}`);
 
   try {
     let query;
@@ -113,20 +113,20 @@ exports.getConversacion = async (req, res) => {
        ORDER BY c.ultima_actividad DESC`;
     }
 
-    console.log(`📋 Query a ejecutar:\n${query}`);
-    console.log(`📋 Con parámetro ID: ${id}`);
+    console.log(`Query a ejecutar:\n${query}`);
+    console.log(`Con parámetro ID: ${id}`);
 
     const result = await pool.query(query, [id]);
 
-    console.log(`✅ Conversaciones encontradas: ${result.rows.length}`);
+    console.log(` Conversaciones encontradas: ${result.rows.length}`);
     if (result.rows.length > 0) {
-      console.log(`📝 Primera conversación:`, result.rows[0]);
+      console.log(` Primera conversación:`, result.rows[0]);
     }
 
     res.json({ ok: true, conversaciones: result.rows });
   } catch (err) {
-    console.error("❌ Error al obtener conversacion:", err);
-    console.error("   Detalles:", err.message);
+    console.error(" Error al obtener conversacion:", err);
+    console.error(" Detalles:", err.message);
     res.status(500).json({ error: "Error al obtener conversacion", details: err.message });
   }
 };
@@ -241,7 +241,7 @@ exports.enviarMensaje = async (req, res) => {
       console.log("✓ Evento 'nuevo-mensaje' enviado EXITOSAMENTE");
       console.log("   Respuesta Pusher:", JSON.stringify(pushResult1, null, 2));
     } catch (pushError) {
-      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje':", pushError.message);
+      console.error(" ERROR PUSHER al enviar 'nuevo-mensaje':", pushError.message);
       throw pushError;
     }
 
@@ -258,7 +258,7 @@ exports.enviarMensaje = async (req, res) => {
       console.log("✓ Evento 'nuevo-mensaje-notificacion' enviado EXITOSAMENTE");
       console.log("   Respuesta Pusher:", JSON.stringify(pushResult2, null, 2));
     } catch (pushError) {
-      console.error("❌ ERROR PUSHER al enviar 'nuevo-mensaje-notificacion':", pushError.message);
+      console.error(" ERROR PUSHER al enviar 'nuevo-mensaje-notificacion':", pushError.message);
     }
 
     console.log("====== MENSAJE ENVIADO EXITOSAMENTE ======\n");
@@ -269,7 +269,7 @@ exports.enviarMensaje = async (req, res) => {
       message: "Mensaje enviado exitosamente"
     });
   } catch (err) {
-    console.error("❌ ERROR al enviar mensaje:", err);
+    console.error(" ERROR al enviar mensaje:", err);
     console.error("Detalles:", err.message);
     console.error("Stack:", err.stack);
     res.status(500).json({

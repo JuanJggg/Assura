@@ -190,7 +190,7 @@ function Chatstudy() {
       senderId: userId
     };
 
-    console.log("📤 Enviando mensaje:", messageData);
+    console.log("Enviando mensaje:", messageData);
 
     try {
       const tempMessage = {
@@ -202,12 +202,12 @@ function Chatstudy() {
       };
       setMessages(prev => [...prev, tempMessage]);
 
-      console.log("➡️ Llamando al backend: POST http://localhost:3001/chat/mensajes");
+      console.log(" Llamando al backend: POST http://localhost:3001/chat/mensajes");
       const response = await axios.post(
         `http://localhost:3001/chat/mensajes`,
         messageData
       );
-      console.log("✅ Respuesta del backend:", response.data);
+      console.log(" Respuesta del backend:", response.data);
 
       setChats(prevChats =>
         prevChats.map(chat =>
@@ -228,7 +228,7 @@ function Chatstudy() {
 
       setMessage("");
     } catch (err) {
-      console.error("❌ Error al enviar mensaje:", err);
+      console.error(" Error al enviar mensaje:", err);
       console.error("Detalles:", err.response?.data || err.message);
     }
   };
