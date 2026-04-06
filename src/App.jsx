@@ -5,525 +5,192 @@ import Header from "./components/header";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+// ─── Avatar helper ────────────────────────────────────────────
+function Avatar({ name, size = 44, fontSize = 16 }) {
+  const colors = ["#DC2626","#7C3AED","#2563EB","#059669","#D97706","#DB2777"];
+  const idx = (name?.charCodeAt(0) || 0) % colors.length;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: `linear-gradient(135deg, ${colors[idx]}, ${colors[(idx+1)%colors.length]})`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "white", fontWeight: 700, fontSize, flexShrink: 0, userSelect: "none"
+    }}>
+      {name?.[0]?.toUpperCase() || "?"}
+    </div>
+  );
+}
+
 function App() {
   const navigate = useNavigate();
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const [asesores, setAsesores] = useState([]);
   const [comentario, setComentario] = useState([]);
+  const [loadingAsesor, setLoadingAsesor] = useState(null);
 
-  useEffect(() => {
-    // Debug: Ver qué usuario está logueado
-    console.log("Usuario logueado:", usuario);
-    getAsesores();
-    getComentarios();
-  }, []);
+  useEffect(() => { getAsesores(); getComentarios(); }, []);
 
   const getAsesores = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:3001/dasboard/getAsesores"
-      );
-      console.log("respuesta asesores", res.data);
+      const res = await axios.post("http://localhost:3001/dasboard/getAsesores");
       setAsesores(res.data);
-    } catch (err) {
-      console.log("Error al obtener asesores", err);
-      alert("Error al obtener asesores");
-    }
+    } catch {}
   };
 
   const getComentarios = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:3001/dasboard/getComentario"
-      );
-      console.log("respuesta comentarios", res.data);
+      const res = await axios.post("http://localhost:3001/dasboard/getComentario");
       setComentario(res.data);
-    } catch (err) {
-      console.log("Error al obtener comentarios", err);
-      alert("Error al obtener comentarios");
-    }
+    } catch {}
   };
 
-  const formatDate = (date) => {
-    return date.toLocaleDateString("es-ES", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  const formatDate = (date) => date.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 
   const handleClick = async (asesorId) => {
-    // Verificar si el usuario está logueado
-    if (!usuario || !usuario.id) {
-      alert("Debes iniciar sesión primero");
-      navigate("/login");
-      return;
-    }
-
-    console.log("=== INICIANDO CREACIÓN DE CONVERSACIÓN ===");
-    console.log("Usuario ID:", usuario.id);
-    console.log("Asesor ID:", asesorId);
-    console.log("Usuario completo:", usuario);
-
-    // Validar que el asesorId exista
-    if (!asesorId) {
-      alert("Error: ID de asesor no válido");
-      return;
-    }
-
+    if (!usuario?.id) { alert("Debes iniciar sesión primero"); navigate("/"); return; }
+    setLoadingAsesor(asesorId);
     try {
-      const payload = {
-        id_estudiante: usuario.id,
-        id_asesor: asesorId
-      };
-
-      console.log("Payload a enviar:", payload);
-
-      // Crear o obtener conversación existente
-      const res = await axios.post(
-        "http://localhost:3001/chat/crearConversacion",
-        payload
-      );
-
-      console.log("Respuesta completa del servidor:", res.data);
-
-      if (res.data.ok) {
-        console.log("Conversación creada exitosamente");
-        console.log("ID de conversación:", res.data.conversacion.id);
-        
-        // Redirigir al chat
-        navigate("/Chatstudy", { 
-          state: { 
-            chatId: res.data.conversacion.id,
-            conversacion: res.data.conversacion
-          } 
-        });
-      } else {
-        console.error("Respuesta no exitosa:", res.data);
-        alert("No se pudo crear la conversación");
-      }
+      const res = await axios.post("http://localhost:3001/chat/crearConversacion", { id_estudiante: usuario.id, id_asesor: asesorId });
+      if (res.data.ok) navigate("/Chatstudy", { state: { chatId: res.data.conversacion.id } });
+      else alert("No se pudo crear la conversación");
     } catch (err) {
-      console.error("=== ERROR AL CREAR CONVERSACIÓN ===");
-      console.error("Error completo:", err);
-      console.error("Respuesta del servidor:", err.response?.data);
-      console.error("Status:", err.response?.status);
-      console.error("Headers:", err.response?.headers);
-      
-      // Mostrar mensaje de error más detallado
-      if (err.response?.data?.error) {
-        alert(`Error: ${err.response.data.error}`);
-      } else {
-        alert("No se pudo iniciar el chat. Revisa la consola para más detalles.");
-      }
-    }
+      alert(err.response?.data?.error || "No se pudo iniciar el chat.");
+    } finally { setLoadingAsesor(null); }
   };
 
-  // Datos para tareas pendientes
-  const tareasIzquierda = [
-    {
-      id: 1,
-      assigned: "Noticias de Assura",
-      name: "Philip Smead",
-      date: "April, 25",
-      priority: "New",
-    },
-    {
-      id: 2,
-      assigned: "Themesdesign",
-      name: "Brent Shipley",
-      date: "April, 28",
-      priority: "High",
-    },
-    {
-      id: 3,
-      assigned: "Noticias de Assura",
-      name: "Kevin Ashley",
-      date: "June, 12",
-      priority: "Medium",
-    },
-    {
-      id: 4,
-      assigned: "Themesdesign",
-      name: "Martin Whitmer",
-      date: "June, 28",
-      priority: "Medium",
-    },
-  ];
-
-  // Datos para el segundo componente de tareas pendientes
-  const tareasDerecha = [
-    {
-      id: 1,
-      assigned: "Noticias de Assura",
-      name: "Enrique Peters",
-      date: "July, 15",
-      priority: "High",
-    },
-    {
-      id: 2,
-      assigned: "Themesdesign",
-      name: "Richard Schnell",
-      date: "July, 30",
-      priority: "New",
-    },
-    {
-      id: 3,
-      assigned: "Noticias de Assura",
-      name: "Dennis Jackson",
-      date: "August, 08",
-      priority: "Medium",
-    },
-    {
-      id: 4,
-      assigned: "Noticias de Assura",
-      name: "Carlos Rodrigues",
-      date: "August, 23",
-      priority: "Low",
-    },
-  ];
+  const hora = new Date().getHours();
+  const saludo = hora < 12 ? "Buenos días" : hora < 18 ? "Buenas tardes" : "Buenas noches";
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden font-sans">
-      {/* Encabezado */}
-      <Header />
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .asesor-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .asesor-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12) !important; }
+        .contact-btn:hover:not(:disabled) { background: #B91C1C !important; }
+        .contact-btn { transition: background 0.15s; }
+        .dashboard-scroll { scrollbar-width: thin; scrollbar-color: #E5E7EB transparent; }
+        .dashboard-scroll::-webkit-scrollbar { width: 5px; }
+        .dashboard-scroll::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+      `}</style>
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", fontFamily: "'Inter',sans-serif" }}>
+        <Header />
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <Menu />
+          <main className="dashboard-scroll" style={{ flex: 1, background: "#F3F4F6", overflowY: "auto", padding: "28px 32px" }}>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <Menu />
-
-        {/* Contenido principal */}
-        <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
-          {/* Debug info - Puedes comentar esto después */}
-          {usuario && usuario.id && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-              <strong>Usuario logueado:</strong> ID: {usuario.id} - {usuario.nombre || usuario.nombres || 'Sin nombre'}
+            {/* Greeting */}
+            <div style={{ marginBottom: 28 }}>
+              <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>
+                {saludo}, <span style={{ color: "#DC2626" }}>{usuario.nombres || "Estudiante"}</span> 👋
+              </h1>
+              <p style={{ margin: "4px 0 0", fontSize: 14, color: "#6B7280" }}>
+                {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              </p>
             </div>
-          )}
 
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6">
-            Asesores Disponibles
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {asesores.length === 0 ? (
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-500">No hay asesores disponibles en este momento.</p>
-              </div>
-            ) : (
-              asesores.map((asesor, index) => (
-                <div
-                  key={asesor.id_asesor || index}
-                  className="bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center transform transition-transform duration-300 hover:scale-110 hover:shadow-2xl"
-                >
-                  <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-8 w-8 text-gray-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+            {/* Stats rápidos */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 32 }}>
+              {[
+                { label: "Asesores disponibles", value: asesores.length, color: "#DC2626", icon: <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
+                { label: "Comentarios en foro", value: comentario.length, color: "#7C3AED", icon: <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                { label: "Mi carrera", value: usuario.carrera?.split(" ")[0] || "—", color: "#2563EB", icon: <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 12v5c3 3 9 3 12 0v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+              ].map(({ label, value, color, icon }) => (
+                <div key={label} style={{ background: "white", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)", borderLeft: `4px solid ${color}`, display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center", color, flexShrink: 0 }}>{icon}</div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#111827" }}>{value}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280", fontWeight: 500 }}>{label}</p>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-700">
-                    {asesor.asesor || "Sin nombre"}
-                  </h3>
-                  <p className="text-sm text-gray-500">{asesor.telefono || "Sin teléfono"}</p>
-                  <p className="text-sm text-gray-500">{asesor.materia || "Sin materia"}</p>
-                  <p className="text-xs text-gray-400 mt-1">ID: {asesor.id_asesor}</p>
-                  <button
-                    onClick={() => handleClick(asesor.id_asesor)}
-                    className="mt-4 bg-red-600 hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition-colors"
-                  >
-                    Contactar
-                  </button>
                 </div>
-              ))
-            )}
-          </div>
-          
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {/* Mensajes */}
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <div className="flex justify-center items-center space-x-8 border-b border-black/20 pb-4 mb-6 text-center text-gray-400 font-semibold text-sm select-none">
-                <div>
-                  <p className="text-cyan-500 font-bold text-lg">
-                    {comentario.length}
-                  </p>
-                  <p>Comentarios</p>
-                </div>
-              </div>
+              ))}
+            </div>
 
-              {/* Lista de mensajes */}
-              <div>
+            {/* Asesores */}
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Asesores disponibles</h2>
+                <span style={{ fontSize: 12, color: "#9CA3AF" }}>{asesores.length} en línea</span>
+              </div>
+              {asesores.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 20px", background: "white", borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                  <p style={{ color: "#9CA3AF", fontSize: 14 }}>No hay asesores disponibles en este momento.</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 16 }}>
+                  {asesores.map((asesor, index) => (
+                    <div key={asesor.id_asesor || index} className="asesor-card" style={{ background: "white", borderRadius: 16, padding: "24px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                      <Avatar name={asesor.asesor} size={60} fontSize={22} />
+                      <h3 style={{ margin: "12px 0 4px", fontSize: 15, fontWeight: 700, color: "#111827" }}>{asesor.asesor || "Sin nombre"}</h3>
+                      <p style={{ margin: "0 0 4px", fontSize: 12, color: "#DC2626", fontWeight: 600 }}>{asesor.materia || "Sin materia"}</p>
+                      <p style={{ margin: "0 0 16px", fontSize: 12, color: "#9CA3AF" }}>{asesor.telefono || "Sin teléfono"}</p>
+                      <button
+                        className="contact-btn"
+                        onClick={() => handleClick(asesor.id_asesor)}
+                        disabled={loadingAsesor === asesor.id_asesor}
+                        style={{ width: "100%", padding: "9px", borderRadius: 9, border: "none", background: "#DC2626", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 2px 8px rgba(220,38,38,0.25)", opacity: loadingAsesor === asesor.id_asesor ? 0.75 : 1 }}
+                      >
+                        {loadingAsesor === asesor.id_asesor ? "Conectando..." : "Contactar"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Comentarios recientes */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 8 }}>
+              {/* Últimos comentarios */}
+              <div style={{ background: "white", borderRadius: 16, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>Comentarios recientes</h3>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#DC2626" }}>{comentario.length}</span>
+                </div>
                 {comentario.length === 0 ? (
-                  <p className="text-gray-400 text-center py-4">No hay comentarios aún</p>
+                  <p style={{ color: "#9CA3AF", fontSize: 13, textAlign: "center", padding: "20px 0" }}>No hay comentarios aún</p>
                 ) : (
-                  comentario.slice(0, 3).map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex items-center justify-between py-4 border-b border-black/20 ${
-                        i === 2 ? "border-0" : ""
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Avatar con inicial */}
-                        <div className="w-10 h-10 bg-red-600 text-white rounded-full flex items-center justify-center text-lg font-semibold uppercase">
-                          {msg.usuario ? msg.usuario.charAt(0) : "?"}
-                        </div>
-                        <div>
-                          <p className="text-gray-800 font-medium">
-                            {msg.usuario || "Anónimo"}
-                          </p>
-                          <p className="text-sm text-gray-500">{msg.contenido || ""}</p>
-                        </div>
+                  comentario.slice(0, 4).map((msg, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < Math.min(comentario.length, 4) - 1 ? "1px solid #F3F4F6" : "none" }}>
+                      <Avatar name={msg.usuario} size={38} fontSize={14} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>{msg.usuario || "Anónimo"}</p>
+                        <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{msg.contenido || ""}</p>
                       </div>
-                      <span className="text-xs text-gray-400">
-                        {msg.fecha ? formatDate(new Date(msg.fecha)) : ""}
-                      </span>
+                      <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>{msg.fecha ? formatDate(new Date(msg.fecha)) : ""}</span>
                     </div>
                   ))
                 )}
-
-                <button
-                  onClick={() => navigate("/Forum")}
-                  className="mt-4 text-white bg-red-600 hover:bg-red-500 px-4 py-2 rounded-full text-sm cursor-pointer transition-colors"
-                >
-                  Ver más
+                <button onClick={() => navigate("/Forum")} style={{ marginTop: 16, padding: "8px 18px", borderRadius: 20, background: "#DC2626", color: "white", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                  Ver foro completo →
                 </button>
               </div>
-            </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-gray-800 font-semibold mb-4">
-                Comentarios destacados
-              </h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="text-red-600 font-medium">Now</p>
-                  <p className="text-gray-600">
-                    Andrei Coman magna sed porta finibus, risus posted a new
-                    article:{" "}
-                    <span className="text-cyan-500 hover:underline cursor-pointer">
-                      Forget UX Rowland
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-red-600 font-medium">Yesterday</p>
-                  <p className="text-gray-600">
-                    Andrei Coman posted a new article:{" "}
-                    <span className="text-cyan-500 hover:underline cursor-pointer">
-                      Designer Alex
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-red-600 font-medium">2:30PM</p>
-                  <p className="text-gray-600">
-                    Zack Wetas commented:{" "}
-                    <span className="text-cyan-500 hover:underline cursor-pointer">
-                      Developer Moreno
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p className="text-red-600 font-medium">12:48PM</p>
-                  <p className="text-gray-600">
-                    Zack & Chris commented:{" "}
-                    <span className="text-cyan-500 hover:underline cursor-pointer">
-                      UX Murphy
-                    </span>
-                  </p>
+              {/* Acceso rápido */}
+              <div style={{ background: "white", borderRadius: 16, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}>
+                <h3 style={{ margin: "0 0 18px", fontSize: 16, fontWeight: 700, color: "#111827" }}>Acceso rápido</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {[
+                    { label: "Ir al foro de la comunidad", path: "/Forum", color: "#7C3AED", desc: "Participa en discusiones académicas" },
+                    { label: "Mis chats con asesores", path: "/Chatstudy", color: "#2563EB", desc: "Gestiona tus conversaciones" },
+                    { label: "Asistente IA académico", path: "/ChatbotEstudiante", color: "#DC2626", desc: "Consulta al chatbot BERT" },
+                  ].map(({ label, path, color, desc }) => (
+                    <button key={path} onClick={() => navigate(path)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 16px", borderRadius: 11, border: `1.5px solid ${color}20`, background: `${color}08`, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
+                      onMouseOver={e => e.currentTarget.style.background = `${color}14`}
+                      onMouseOut={e => e.currentTarget.style.background = `${color}08`}>
+                      <div style={{ width: 38, height: 38, borderRadius: 9, background: `${color}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color }}><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                      <div>
+                        <p style={{ margin:0, fontSize:13, fontWeight:700, color:"#111827" }}>{label}</p>
+                        <p style={{ margin:"2px 0 0", fontSize:11, color:"#9CA3AF" }}>{desc}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
-
-            {/* Redes sociales*/}
-            <div className="bg-white p-6 rounded-xl shadow-md space-y-6">
-              <h3 className="text-gray-800 font-semibold mb-4">
-                Redes Sociales
-              </h3>
-              {[
-                {
-                  name: "Facebook",
-                  color: "text-blue-600",
-                  bg: "bg-blue-600",
-                  icon: (
-                    <path d="M22 12a10 10 0 10-11.78 9.88v-7H8v-3h2.22V9.5c0-2.2 1.3-3.42 3.3-3.42.96 0 1.97.17 1.97.17v2.17H14.9c-1.1 0-1.44.69-1.44 1.4V12h2.45l-.39 3h-2.06v7A10 10 0 0022 12z" />
-                  ),
-                },
-                {
-                  name: "X",
-                  color: "text-gray-800",
-                  bg: "bg-gray-800",
-                  icon: (
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  ),
-                },
-              ].map((platform, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center text-center justify-center"
-                >
-                  <svg
-                    className={`w-8 h-8 ${platform.color} mb-2`}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    {platform.icon}
-                  </svg>
-                  <h4 className={`text-xl font-bold ${platform.color}`}>
-                    {platform.count}
-                  </h4>
-                  <p className="text-gray-500 text-sm">New Peoples</p>
-                  <p className="text-gray-400 text-xs">
-                    Your main list is growing
-                  </p>
-                  <button className="mt-2 text-white bg-red-600 hover:bg-red-500 px-3 py-1 rounded-full text-sm cursor-pointer transition-colors">
-                    Following you
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                Tabla de Comentarios
-              </h3>
-
-              <div className="grid grid-cols-12 gap-2 border-b pb-3 mb-3 text-sm font-medium text-gray-600">
-                <div className="col-span-1"></div>
-                <div className="col-span-3">Assigned</div>
-                <div className="col-span-3">Name</div>
-                <div className="col-span-3">Date</div>
-                <div className="col-span-2">Priority</div>
-              </div>
-
-              {tareasIzquierda.map((tarea) => (
-                <div
-                  key={tarea.id}
-                  className="grid grid-cols-12 gap-2 py-3 border-b border-gray-100 items-center text-sm"
-                >
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 cursor-pointer"
-                    />
-                  </div>
-                  <div className="col-span-3 text-gray-700">
-                    {tarea.assigned}
-                  </div>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-red-600"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-gray-800">{tarea.name}</span>
-                  </div>
-                  <div className="col-span-3 text-gray-600">{tarea.date}</div>
-                  <div className="col-span-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tarea.priority === "High"
-                          ? "bg-red-100 text-red-600"
-                          : tarea.priority === "Medium"
-                          ? "bg-green-100 text-green-600"
-                          : tarea.priority === "Low"
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-blue-100 text-red-600"
-                      }`}
-                    >
-                      {tarea.priority}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-white p-6 rounded-xl shadow-md">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                Tabla de Comentarios
-              </h3>
-              <div className="grid grid-cols-12 gap-2 border-b pb-3 mb-3 text-sm font-medium text-gray-600">
-                <div className="col-span-1"></div>
-                <div className="col-span-3">Assigned</div>
-                <div className="col-span-3">Name</div>
-                <div className="col-span-3">Date</div>
-                <div className="col-span-2">Priority</div>
-              </div>
-
-              {tareasDerecha.map((tarea) => (
-                <div
-                  key={tarea.id}
-                  className="grid grid-cols-12 gap-2 py-3 border-b border-gray-100 items-center text-sm"
-                >
-                  <div className="col-span-1">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 cursor-pointer"
-                    />
-                  </div>
-                  <div className="col-span-3 text-gray-700">
-                    {tarea.assigned}
-                  </div>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full overflow-hidden flex items-center justify-center">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-red-600"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-gray-800">{tarea.name}</span>
-                  </div>
-                  <div className="col-span-3 text-gray-600">{tarea.date}</div>
-                  <div className="col-span-2">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        tarea.priority === "High"
-                          ? "bg-red-100 text-red-600"
-                          : tarea.priority === "Medium"
-                          ? "bg-green-100 text-green-600"
-                          : tarea.priority === "Low"
-                          ? "bg-red-100 text-red-600"
-                          : "bg-blue-100 text-red-600"
-                      }`}
-                    >
-                      {tarea.priority}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

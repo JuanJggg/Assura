@@ -2,130 +2,116 @@ import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import pusher from "../../services/pusher";
 
+// ─── SVG Icons ───────────────────────────────────────────────
+const SendIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const EmptyIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="48" height="48" style={{ opacity: 0.25, margin: "0 auto 12px", display: "block" }}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const SelectChatIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="64" height="64" style={{ opacity: 0.15, margin: "0 auto 16px", display: "block" }}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="#6B7280" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+    <circle cx="11" cy="11" r="8" stroke="#9CA3AF" strokeWidth="2"/>
+    <path d="M21 21l-4.35-4.35" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
+// ─── Avatar helper ────────────────────────────────────────────
+function Avatar({ name, size = 44, fontSize = 17 }) {
+  const colors = ["#DC2626","#7C3AED","#2563EB","#059669","#D97706","#DB2777"];
+  const idx = (name?.charCodeAt(0) || 0) % colors.length;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: `linear-gradient(135deg, ${colors[idx]}, ${colors[(idx+1) % colors.length]})`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: "white", fontWeight: 700, fontSize, flexShrink: 0, userSelect: "none"
+    }}>
+      {name?.[0]?.toUpperCase() || "?"}
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────
 function Chatbot() {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [search, setSearch] = useState("");
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
   const selectedChatIdRef = useRef(selectedChatId);
+  const inputRef = useRef(null);
 
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
 
-  useEffect(() => {
-    selectedChatIdRef.current = selectedChatId;
-  }, [selectedChatId]);
+  useEffect(() => { selectedChatIdRef.current = selectedChatId; }, [selectedChatId]);
 
+  // ── Pusher: canal del chat seleccionado
   useEffect(() => {
     if (!selectedChatId) return;
-
-    console.log("Suscribiéndose al canal: chat-" + selectedChatId);
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
-
-    channel.bind("pusher:subscription_succeeded", () => {
-      console.log("Suscripción exitosa al canal: chat-" + selectedChatId);
-    });
-
-    channel.bind("pusher:subscription_error", (err) => {
-      console.error("Error al suscribirse al canal chat-" + selectedChatId, err);
-    });
-
     channel.bind("nuevo-mensaje", (data) => {
-      console.log("   Mensaje recibido en chat-" + selectedChatId + ":", data);
-      console.log("   Usuario que envió:", data.remitente_id);
-      console.log("   Usuario actual:", userId);
-      console.log("   ¿Es de otro usuario?", data.remitente_id != userId);
-
       if (data.remitente_id != userId) {
-        console.log("Agregando mensaje a la lista");
-        setMessages((prev) => [...prev, data]);
-      } else {
-        console.log("Mensaje propio, ignorando (ya está en la lista)");
+        setMessages(prev => [...prev, data]);
       }
     });
-
     return () => {
-      if (channelRef.current) {
-        console.log("🔌 Desuscribiéndose del canal: chat-" + selectedChatId);
-        channelRef.current.unbind_all();
-        pusher.unsubscribe(`chat-${selectedChatId}`);
-      }
+      channelRef.current?.unbind_all();
+      pusher.unsubscribe(`chat-${selectedChatId}`);
     };
   }, [selectedChatId, userId]);
 
+  // ── Pusher: notificaciones del asesor
   useEffect(() => {
     if (!userId) return;
-
-    console.log("Suscribiéndose al canal de notificaciones: asesor-" + userId);
     const notificationChannel = pusher.subscribe(`asesor-${userId}`);
     notificationChannelRef.current = notificationChannel;
-
-    notificationChannel.bind("pusher:subscription_succeeded", () => {
-      console.log("Suscripción exitosa al canal: asesor-" + userId);
-    });
-
-    notificationChannel.bind("pusher:subscription_error", (err) => {
-      console.error("Error al suscribirse al canal asesor-" + userId, err);
-    });
-
-    notificationChannel.bind("nueva-conversacion", (data) => {
-      console.log("Nueva conversación recibida:", data);
-      cargarConversaciones();
-    });
-
+    notificationChannel.bind("nueva-conversacion", () => cargarConversaciones());
     notificationChannel.bind("nuevo-mensaje-notificacion", (data) => {
-      console.log("   Notificación de nuevo mensaje:", data);
-      console.log("   ID conversación recibida:", data.id_conversacion);
-      console.log("   ID conversación actual:", selectedChatIdRef.current);
-
       cargarConversaciones();
-
       if (data.id_conversacion == selectedChatIdRef.current) {
-        console.log("Es el chat actual, recargando mensajes...");
         cargarMensajes(selectedChatIdRef.current);
-      } else {
-        console.log("No es el chat actual, solo se actualiza la lista");
       }
     });
-
     return () => {
-      if (notificationChannelRef.current) {
-        console.log("🔌 Desuscribiéndose del canal: asesor-" + userId);
-        notificationChannelRef.current.unbind_all();
-        pusher.unsubscribe(`asesor-${userId}`);
-      }
+      notificationChannelRef.current?.unbind_all();
+      pusher.unsubscribe(`asesor-${userId}`);
     };
   }, [userId]);
 
   const cargarConversaciones = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getConversacion/asesor/${userId}`
-      );
-
+      const res = await axios.get(`http://localhost:3001/chat/getConversacion/asesor/${userId}`);
       if (res.data.ok) {
-        const conversaciones = res.data.conversaciones.map((conv) => ({
+        const conversaciones = res.data.conversaciones.map(conv => ({
           id: conv.id,
           name: `${conv.estudiante_nombre} ${conv.estudiante_apellido}`,
           status: "Estudiante",
           lastMessage: conv.ultimo_mensaje || "Sin mensajes",
           lastMessageTime: conv.ultima_actividad
-            ? new Date(conv.ultima_actividad).toLocaleString("es-ES", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "",
+            ? new Date(conv.ultima_actividad).toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+            : ""
         }));
-
         setChats(conversaciones);
-
-        if (conversaciones.length > 0 && !selectedChatId) {
+        if (conversaciones.length > 0 && !selectedChatIdRef.current) {
           setSelectedChatId(conversaciones[0].id);
         }
       }
@@ -134,225 +120,313 @@ function Chatbot() {
     }
   };
 
-  useEffect(() => {
-    if (userId) {
-      cargarConversaciones();
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    if (selectedChatId) {
-      cargarMensajes(selectedChatId);
-    }
-  }, [selectedChatId]);
+  useEffect(() => { if (userId) cargarConversaciones(); }, [userId]);
+  useEffect(() => { if (selectedChatId) cargarMensajes(selectedChatId); }, [selectedChatId]);
 
   const cargarMensajes = async (chatId) => {
     try {
-      const res = await axios.get(
-        `http://localhost:3001/chat/getMensajes/${chatId}`
-      );
-
-      if (res.data.ok) {
-        setMessages(res.data.mensajes || []);
-      }
-    } catch (err) {
-      console.log("Error al cargar mensajes:", err);
-    }
+      const res = await axios.get(`http://localhost:3001/chat/getMensajes/${chatId}`);
+      if (res.data.ok) setMessages(res.data.mensajes || []);
+    } catch {}
   };
 
-  const [messageCount, setMessageCount] = useState(0);
+  // Scroll suave solo al nuevo mensaje
+  const prevCountRef = useRef(0);
   useEffect(() => {
-    if (messages.length > messageCount) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-      setMessageCount(messages.length);
-    } else if (messageCount === 0 && messages.length > 0) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
-      setMessageCount(messages.length);
+    if (messages.length > prevCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: messages.length - prevCountRef.current === 1 ? "smooth" : "auto"
+      });
     }
-  }, [messages, messageCount]);
+    prevCountRef.current = messages.length;
+  }, [messages]);
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !selectedChatId) return;
-
-    const messageData = {
-      chatId: selectedChatId,
-      content: message.trim(),
-      senderId: userId,
+    const text = message.trim();
+    const tempMessage = {
+      id_conversacion: selectedChatId,
+      contenido: text,
+      remitente_id: userId,
+      remitente_tipo: "asesor",
+      fecha_envio: new Date().toISOString()
     };
-
-    console.log("Enviando mensaje:", messageData);
-
+    setMessages(prev => [...prev, tempMessage]);
+    setMessage("");
+    if (inputRef.current) inputRef.current.style.height = "auto";
     try {
-      const tempMessage = {
-        id_conversacion: selectedChatId,
-        contenido: message.trim(),
-        remitente_id: userId,
-        remitente_tipo: 'asesor',
-        fecha_envio: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, tempMessage]);
-
-      console.log("Llamando al backend: POST http://localhost:3001/chat/mensajes");
-      const response = await axios.post(`http://localhost:3001/chat/mensajes`, messageData);
-      console.log("Respuesta del backend:", response.data);
-
-      setChats((prevChats) =>
-        prevChats.map((chat) =>
-          chat.id === selectedChatId
-            ? {
-                ...chat,
-                lastMessage: message.trim(),
-                lastMessageTime: new Date().toLocaleString("es-ES", {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-              }
-            : chat
-        )
-      );
-
-      setMessage("");
+      await axios.post("http://localhost:3001/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId });
+      setChats(prev => prev.map(c => c.id === selectedChatId
+        ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
+        : c
+      ));
     } catch (err) {
-      console.error("Error al enviar mensaje:", err);
-      console.error("Detalles:", err.response?.data || err.message);
+      console.error("Error al enviar:", err);
     }
   };
 
-  const selectedChat = chats.find((chat) => chat.id === selectedChatId);
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
+
+  const selectedChat = chats.find(c => c.id === selectedChatId);
+  const filteredChats = chats.filter(c =>
+    c.name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.lastMessage?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Agrupar mensajes por fecha
+  const groupedMessages = messages.reduce((acc, msg, i) => {
+    const date = new Date(msg.fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    const prev = i > 0 ? new Date(messages[i-1].fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) : null;
+    return [...acc, ...(date !== prev ? [{ type: "date", label: date }] : []), { type: "msg", data: msg }];
+  }, []);
 
   return (
-    <div className="flex h-full bg-gray-100">
-          {/* Lista de chats */}
-          <div className="w-80 bg-white border-r border-gray-200 h-full overflow-y-auto">
-            <div className="p-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Chats con Estudiantes</h2>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .asesor-chat-messages { scrollbar-width: thin; scrollbar-color: #E5E7EB transparent; }
+        .asesor-chat-messages::-webkit-scrollbar { width: 5px; }
+        .asesor-chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .asesor-chat-messages::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        .asesor-chat-list { scrollbar-width: thin; scrollbar-color: #E5E7EB transparent; }
+        .asesor-chat-list::-webkit-scrollbar { width: 4px; }
+        .asesor-chat-list::-webkit-scrollbar-track { background: transparent; }
+        .asesor-chat-list::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        .asesor-chat-item:hover { background: #F9FAFB !important; }
+        .asesor-chat-item.active { background: #FFF5F5 !important; }
+        .asesor-send-btn:not(:disabled):hover { background: linear-gradient(135deg,#B91C1C,#991B1B) !important; transform: scale(1.04); }
+        .asesor-send-btn { transition: all 0.15s ease; }
+      `}</style>
+
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", background: "#F0F2F5", fontFamily: "'Inter',sans-serif" }}>
+
+        {/* ── Lista de chats ── */}
+        <div style={{
+          width: 320, flexShrink: 0, background: "white",
+          borderRight: "1px solid #E5E7EB",
+          display: "flex", flexDirection: "column", overflow: "hidden"
+        }}>
+          {/* Cabecera */}
+          <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #F3F4F6", flexShrink: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Chats con Estudiantes</h2>
             </div>
-            <div className="divide-y divide-gray-200">
-              {chats.length === 0 ? (
-                <p className="text-center text-gray-400 p-4">
-                  No hay chats disponibles.
+            {/* Buscador */}
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar estudiante..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{
+                  width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10,
+                  border: "1.5px solid #E5E7EB", fontSize: 13, background: "#F9FAFB",
+                  outline: "none", fontFamily: "inherit", boxSizing: "border-box", color: "#374151"
+                }}
+                onFocus={e => e.target.style.borderColor = "#DC2626"}
+                onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+              />
+            </div>
+          </div>
+
+          {/* Lista */}
+          <div className="asesor-chat-list" style={{ flex: 1, overflowY: "auto" }}>
+            {filteredChats.length === 0 ? (
+              <div style={{ padding: 32, textAlign: "center" }}>
+                <EmptyIcon />
+                <p style={{ color: "#9CA3AF", fontSize: 14, margin: 0 }}>
+                  {search ? "Sin resultados" : "No hay conversaciones"}
                 </p>
-              ) : (
-                chats.map(chat => (
-                  <div
-                    key={chat.id}
-                    onClick={() => setSelectedChatId(chat.id)}
-                    className={`p-4 hover:bg-red-50 cursor-pointer transition-colors duration-150 ${
-                      selectedChatId === chat.id ? "bg-red-50" : ""
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                        <span className="text-red-600 font-semibold text-lg">
-                          {chat.name?.[0]?.toUpperCase() || "?"}
-                        </span>
+              </div>
+            ) : (
+              filteredChats.map(chat => (
+                <div
+                  key={chat.id}
+                  className={`asesor-chat-item${selectedChatId === chat.id ? " active" : ""}`}
+                  onClick={() => setSelectedChatId(chat.id)}
+                  style={{
+                    padding: "12px 16px", cursor: "pointer",
+                    borderBottom: "1px solid #F3F4F6",
+                    background: selectedChatId === chat.id ? "#FFF5F5" : "white",
+                    transition: "background 0.15s",
+                    borderLeft: selectedChatId === chat.id ? "3px solid #DC2626" : "3px solid transparent"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <Avatar name={chat.name} size={46} fontSize={17} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {chat.name}
+                        </p>
+                        <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>{chat.lastMessageTime}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {chat.name || "Sin nombre"}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {chat.lastMessageTime || ""}
-                          </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span style={{ color: "#DC2626", fontWeight: 500 }}>{chat.status} · </span>
+                        {chat.lastMessage}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ── Ventana de chat ── */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {selectedChat ? (
+            <>
+              {/* Header del chat */}
+              <div style={{
+                padding: "12px 20px", background: "white",
+                borderBottom: "1px solid #E5E7EB",
+                display: "flex", alignItems: "center", gap: 12,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flexShrink: 0
+              }}>
+                <Avatar name={selectedChat.name} size={42} fontSize={16} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{selectedChat.name}</h3>
+                  <p style={{ margin: "2px 0 0", fontSize: 12, color: "#DC2626", fontWeight: 500 }}>
+                    {selectedChat.status || "Estudiante"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Mensajes */}
+              <div
+                className="asesor-chat-messages"
+                style={{
+                  flex: 1, overflowY: "auto",
+                  padding: "20px 24px",
+                  display: "flex", flexDirection: "column", gap: 2
+                }}
+              >
+                {groupedMessages.map((item, idx) => {
+                  if (item.type === "date") {
+                    return (
+                      <div key={`date-${idx}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0 8px" }}>
+                        <div style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+                        <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 500, whiteSpace: "nowrap" }}>{item.label}</span>
+                        <div style={{ flex: 1, height: 1, background: "#E5E7EB" }} />
+                      </div>
+                    );
+                  }
+                  const msg = item.data;
+                  const isSender = msg.remitente_id == userId;
+                  return (
+                    <div key={idx} style={{
+                      display: "flex",
+                      justifyContent: isSender ? "flex-end" : "flex-start",
+                      marginBottom: 6
+                    }}>
+                      {!isSender && (
+                        <div style={{ marginRight: 8, alignSelf: "flex-end", marginBottom: 2 }}>
+                          <Avatar name={selectedChat.name} size={28} fontSize={11} />
                         </div>
-                        <p className="text-sm text-gray-500 truncate">
-                          {chat.lastMessage || "Sin mensajes"}
+                      )}
+                      <div style={{ maxWidth: "65%" }}>
+                        <div style={{
+                          padding: "10px 14px",
+                          borderRadius: isSender ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+                          background: isSender
+                            ? "linear-gradient(135deg,#DC2626,#B91C1C)"
+                            : "white",
+                          color: isSender ? "white" : "#111827",
+                          boxShadow: isSender
+                            ? "0 2px 10px rgba(220,38,38,0.2)"
+                            : "0 1px 4px rgba(0,0,0,0.07)",
+                          border: isSender ? "none" : "1px solid #F3F4F6"
+                        }}>
+                          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, wordBreak: "break-word" }}>{msg.contenido}</p>
+                        </div>
+                        <p style={{
+                          margin: "3px 4px 0",
+                          fontSize: 10, color: "#9CA3AF",
+                          textAlign: isSender ? "right" : "left"
+                        }}>
+                          {msg.fecha_envio
+                            ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true })
+                            : ""}
                         </p>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Ventana de chat */}
-          <div className="flex-1 flex flex-col h-full">
-            {selectedChat ? (
-              <>
-                <div className="p-4 bg-white border-b border-gray-200 flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <span className="text-red-600 font-semibold">
-                      {selectedChat.name?.[0]?.toUpperCase() || "?"}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedChat.name || "Chat"}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {selectedChat.status || ""}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                  {messages.map((msg, idx) => {
-                    const isSender = msg.remitente_id == userId;
-                    return (
-                      <div
-                        key={idx}
-                        className={`flex ${isSender ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-md rounded-lg p-3 ${
-                            isSender
-                              ? "bg-red-600 text-white"
-                              : "bg-white text-gray-900"
-                          }`}
-                        >
-                          <p className="text-sm">{msg.contenido}</p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              isSender ? "text-red-200" : "text-gray-500"
-                            }`}
-                          >
-                            {msg.fecha_envio
-                              ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                })
-                              : ""}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-                <form
-                  onSubmit={handleSendMessage}
-                  className="p-4 bg-white border-t border-gray-200"
-                >
-                  <div className="flex space-x-4">
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Escribe un mensaje..."
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    />
-                    <button
-                      type="submit"
-                      disabled={!message.trim()}
-                      className="px-6 py-2 bg-red-600 text-white rounded-full font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Enviar
-                    </button>
-                  </div>
-                </form>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center bg-gray-50">
-                <p className="text-gray-500">Selecciona un chat para comenzar</p>
+                  );
+                })}
+                <div ref={messagesEndRef} />
               </div>
-            )}
-          </div>
-    </div>
+
+              {/* Input */}
+              <form
+                onSubmit={handleSendMessage}
+                style={{
+                  padding: "12px 20px", background: "white",
+                  borderTop: "1px solid #E5E7EB",
+                  display: "flex", alignItems: "flex-end", gap: 10,
+                  boxShadow: "0 -2px 8px rgba(0,0,0,0.04)", flexShrink: 0
+                }}
+              >
+                <textarea
+                  ref={inputRef}
+                  value={message}
+                  onChange={handleInputChange}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
+                  placeholder="Escribe un mensaje..."
+                  rows={1}
+                  style={{
+                    flex: 1, padding: "11px 16px", borderRadius: 22,
+                    border: "1.5px solid #E5E7EB", fontSize: 14,
+                    fontFamily: "inherit", outline: "none", resize: "none",
+                    lineHeight: 1.5, background: "#F9FAFB",
+                    transition: "border-color 0.2s", minHeight: 44, maxHeight: 120,
+                    overflow: "auto", boxSizing: "border-box"
+                  }}
+                  onFocus={e => e.target.style.borderColor = "#DC2626"}
+                  onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+                />
+                <button
+                  type="submit"
+                  className="asesor-send-btn"
+                  disabled={!message.trim()}
+                  title="Enviar"
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%", border: "none",
+                    background: message.trim()
+                      ? "linear-gradient(135deg,#DC2626,#B91C1C)"
+                      : "#E5E7EB",
+                    color: message.trim() ? "white" : "#9CA3AF",
+                    cursor: message.trim() ? "pointer" : "not-allowed",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                    boxShadow: message.trim() ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
+                  }}
+                >
+                  <SendIcon />
+                </button>
+              </form>
+            </>
+          ) : (
+            <div style={{
+              flex: 1, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              background: "#F0F2F5"
+            }}>
+              <SelectChatIcon />
+              <p style={{ color: "#9CA3AF", fontSize: 15, fontWeight: 500, margin: 0 }}>Selecciona una conversación</p>
+              <p style={{ color: "#D1D5DB", fontSize: 13, marginTop: 6 }}>Los estudiantes aparecerán aquí cuando inicien un chat</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 

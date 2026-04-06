@@ -10,6 +10,8 @@ import RegisterAsesor from './components/asesor/Register.jsx'
 import Chatbot from './components/chate/Chatstudy.jsx'
 import Password from './components/Password.jsx';
 import ResetPassword from './components/Resetpassword.jsx';
+import ChatbotEstudiante from './components/chatbot/ChatbotEstudiante.jsx';
+import ChatbotAsesor from './components/chatbot/ChatbotAsesor.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -23,6 +25,8 @@ createRoot(document.getElementById('root')).render(
         <Route path="/Chatstudy" element={<Chatbot />} />
         <Route path="/ForgotPassword" element={<Password />} />
         <Route path="/ResetPassword/:token" element={<ResetPassword />} />
+        <Route path="/ChatbotEstudiante" element={<ChatbotEstudiante />} />
+        <Route path="/ChatbotAsesor" element={<ChatbotAsesor />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
