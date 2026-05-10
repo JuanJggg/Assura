@@ -18,7 +18,7 @@ async function checkPythonService() {
 
 // ── POST /chatbot/enviar ─────────────────────────────────────────────────────────
 exports.enviarMensaje = async (req, res) => {
-  const { id_estudiante, mensaje } = req.body;
+  const { id_estudiante, mensaje, historial = [], nombre_estudiante = "" } = req.body;
 
   if (!id_estudiante || !mensaje?.trim()) {
     return res.status(400).json({
@@ -30,33 +30,36 @@ exports.enviarMensaje = async (req, res) => {
   const mensajeLimpio = mensaje.trim();
 
   try {
-    // 1. Verificar disponibilidad del servicio BERT
+    // 1. Verificar disponibilidad del microservicio Python
     const pythonActivo = await checkPythonService();
 
     let resultado;
     if (pythonActivo) {
-      // 2a. Clasificar con BERT
+      // 2a. Usar el nuevo endpoint /chat conversacional con historial
       const response = await axios.post(
-        `${PYTHON_API}/classify`,
-        { mensaje: mensajeLimpio, id_estudiante },
+        `${PYTHON_API}/chat`,
+        {
+          mensaje: mensajeLimpio,
+          id_estudiante,
+          nombre_estudiante,
+          historial: historial.slice(-10), // últimos 10 turnos para contexto
+        },
         { timeout: 30000 }
       );
       resultado = response.data;
     } else {
-      // 2b. Fallback si el microservicio no está disponible
-      console.warn("⚠️ Microservicio BERT no disponible, usando fallback");
+      // 2b. Fallback amigable si el microservicio no está disponible
+      console.warn("⚠️ Microservicio Python no disponible, usando fallback");
       resultado = {
         ok: true,
-        categoria: "solicitud_asesoria",
-        nombre_categoria: "Solicitud de Asesoría",
-        icono: "🤝",
-        color: "#8B5CF6",
+        intencion: "general",
+        categoria: null,
         confianza: 0.5,
         respuesta:
-          "Tu mensaje ha sido recibido. El sistema de IA está iniciando, por favor intenta en unos momentos o contacta directamente a un asesor.",
+          "El sistema de IA está iniciando, intenta en unos segundos. Si el problema persiste, puedes contactar directamente a un asesor desde el Dashboard. 😊",
         recursos: [],
-        consejo_rapido: "",
-        scores: {},
+        consejo_rapido: null,
+        ejercicio_data: null,
         fallback: true,
       };
     }
@@ -70,13 +73,12 @@ exports.enviarMensaje = async (req, res) => {
         [
           id_estudiante,
           mensajeLimpio,
-          resultado.categoria || "sin_clasificar",
+          resultado.categoria || "general",
           resultado.confianza || 0,
           resultado.respuesta || "",
         ]
       );
     } catch (dbError) {
-      // No interrumpir la respuesta al usuario por error de BD
       console.error("Error guardando en BD:", dbError.message);
     }
 

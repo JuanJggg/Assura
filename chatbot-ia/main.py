@@ -8,13 +8,14 @@ import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from classifier import classifier, CATEGORY_NAMES, CATEGORY_ICONS, CATEGORY_COLORS
+from brain import brain
 
 # ── Registro en memoria de clasificaciones (para estadísticas sin DB en Python) ─
 clasificaciones_log: list[dict] = []
@@ -82,6 +83,31 @@ class GenerarRequest(BaseModel):
     dificultad: str = "medio"
 
 
+class MensajeHistorial(BaseModel):
+    role: str  # "user" o "bot"
+    content: str
+    intencion: Optional[str] = None
+    categoria: Optional[str] = None
+
+
+class ChatRequest(BaseModel):
+    mensaje: str
+    historial: Optional[List[MensajeHistorial]] = []
+    id_estudiante: Optional[int] = None
+    nombre_estudiante: Optional[str] = ""
+
+
+class ChatResponse(BaseModel):
+    ok: bool
+    respuesta: str
+    intencion: str
+    categoria: Optional[str] = None
+    confianza: float
+    ejercicio_data: Optional[dict] = None
+    recursos: List[str] = []
+    consejo_rapido: Optional[str] = None
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -91,10 +117,55 @@ def health():
         "status": "running",
         "modelo": "bert-base-multilingual-cased",
         "modelo_cargado": classifier.is_loaded(),
-        "version": "2.0.0",
-        "capacidades": ["clasificacion", "resolucion_ejercicios", "generacion_ejercicios"],
+        "version": "3.0.0",
+        "capacidades": ["chat_conversacional", "clasificacion", "resolucion_ejercicios", "generacion_ejercicios", "explicacion_temas"],
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+@app.post("/chat", response_model=ChatResponse)
+def chat(req: ChatRequest):
+    """
+    Endpoint de chat conversacional principal.
+    Usa el motor AssuraBrain para respuestas inteligentes y contextuales.
+    No requiere que el modelo BERT esté cargado — funciona siempre.
+    """
+    mensaje = req.mensaje.strip()
+    if not mensaje:
+        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+    if len(mensaje) > 2000:
+        raise HTTPException(status_code=400, detail="Mensaje demasiado largo (máx. 2000 caracteres).")
+
+    historial_raw = [
+        {"role": m.role, "content": m.content, "intencion": m.intencion, "categoria": m.categoria}
+        for m in (req.historial or [])
+    ]
+
+    resultado = brain.responder(
+        mensaje=mensaje,
+        historial=historial_raw,
+        nombre_estudiante=req.nombre_estudiante or "",
+    )
+
+    # Guardar log en memoria
+    clasificaciones_log.append({
+        "id_estudiante": req.id_estudiante,
+        "mensaje": mensaje,
+        "categoria": resultado.get("categoria"),
+        "intencion": resultado.get("intencion"),
+        "timestamp": datetime.utcnow().isoformat(),
+    })
+
+    return ChatResponse(
+        ok=True,
+        respuesta=resultado.get("respuesta", ""),
+        intencion=resultado.get("intencion", "general"),
+        categoria=resultado.get("categoria"),
+        confianza=resultado.get("confianza", 0.9),
+        ejercicio_data=resultado.get("ejercicio_data"),
+        recursos=resultado.get("recursos", []),
+        consejo_rapido=resultado.get("consejo_rapido"),
+    )
 
 
 @app.post("/classify", response_model=ClasificarResponse)

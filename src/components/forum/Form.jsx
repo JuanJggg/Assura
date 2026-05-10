@@ -16,7 +16,7 @@ function Avatar({ name, size = 38, fontSize = 14 }) {
 }
 
 const Form = () => {
-  const usuario = JSON.parse(localStorage.getItem("token"))?.[0];
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
   const [showForm, setShowForm] = useState(false);
   const [topics, setTopics] = useState([]);
   const [coments, setComments] = useState([]);
