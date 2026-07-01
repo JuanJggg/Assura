@@ -47,7 +47,9 @@ function Avatar({ name, size = 44, fontSize = 17 }) {
 
 // ─── Main Component ───────────────────────────────────────────
 function Chatbot() {
-  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [selectedChatId, _setSelectedChatId] = useState(null);
+  // Wrapper para siempre normalizar el ID a Number
+  const setSelectedChatId = (id) => _setSelectedChatId(id != null ? Number(id) : null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -69,8 +71,13 @@ function Chatbot() {
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
     channel.bind("nuevo-mensaje", (data) => {
-      if (data.remitente_id != userId) {
-        setMessages(prev => [...prev, data]);
+      // Comparación numérica estricta para evitar duplicados
+      if (Number(data.remitente_id) !== Number(userId)) {
+        setMessages(prev => {
+          // Evitar duplicados por ID de mensaje
+          if (data.id && prev.some(m => m.id === data.id)) return prev;
+          return [...prev, data];
+        });
       }
     });
     return () => {
@@ -102,7 +109,7 @@ function Chatbot() {
       const res = await axios.get(`http://localhost:3001/chat/getConversacion/asesor/${userId}`);
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
-          id: conv.id,
+          id: Number(conv.id),  // Normalizar a Number
           name: `${conv.estudiante_nombre} ${conv.estudiante_apellido}`,
           status: "Estudiante",
           lastMessage: conv.ultimo_mensaje || "Sin mensajes",
@@ -111,6 +118,7 @@ function Chatbot() {
             : ""
         }));
         setChats(conversaciones);
+        // Solo auto-seleccionar si no hay chat seleccionado actualmente
         if (conversaciones.length > 0 && !selectedChatIdRef.current) {
           setSelectedChatId(conversaciones[0].id);
         }
@@ -156,7 +164,7 @@ function Chatbot() {
     setMessage("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     try {
-      await axios.post("http://localhost:3001/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId });
+      await axios.post("http://localhost:3001/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "asesor" });
       setChats(prev => prev.map(c => c.id === selectedChatId
         ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
         : c

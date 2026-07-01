@@ -526,16 +526,23 @@ Recorre mentalmente el lugar para recordar la información.
 **Combinatoria:**
 • Permutaciones: P(n,r) = n!/(n-r)!
 • Combinaciones: C(n,r) = n!/(r!(n-r)!)
+• Permutaciones con repetición: n^r
 
 **Teoría de grafos:**
 • Grafo: conjunto de nodos y aristas
 • Grafo completo Kn: n(n-1)/2 aristas
 • Árbol: grafo conexo sin ciclos, n-1 aristas
+• BFS: recorrido en anchura | DFS: en profundidad
 
 **Inducción matemática:**
 1. Probar caso base (n=1)
-2. Asumir para n=k (hipótesis)
+2. Asumir para n=k (hipótesis inductiva)
 3. Demostrar para n=k+1
+
+**Ejemplo:** 1+2+3+...+n = n(n+1)/2
+• Base n=1: 1 = 1(2)/2 = 1 ✓
+• Hip.: 1+...+k = k(k+1)/2
+• k+1: k(k+1)/2 + (k+1) = (k+1)(k+2)/2 ✓
 
 ¿Quieres un ejercicio de matemáticas discretas?""",
 
@@ -546,42 +553,194 @@ Recorre mentalmente el lugar para recordar la información.
 • INSERT INTO tabla (cols) VALUES (vals)
 • UPDATE tabla SET col=val WHERE condición
 • DELETE FROM tabla WHERE condición
+• GROUP BY + HAVING: agrupar y filtrar grupos
+• ORDER BY columna DESC/ASC: ordenar resultados
 
 **JOINs:**
-• INNER JOIN: solo coincidencias
-• LEFT JOIN: todos de la izquierda + coincidencias
-• RIGHT JOIN: todos de la derecha + coincidencias
+• INNER JOIN: solo coincidencias entre ambas tablas
+• LEFT JOIN: todos de la izquierda + coincidencias derechas
+• RIGHT JOIN: todos de la derecha + coincidencias izquierdas
+• FULL OUTER JOIN: todos, con o sin coincidencia
+
+**Ejemplo de JOIN:**
+```sql
+SELECT e.nombre, c.nombre_curso
+FROM estudiantes e
+JOIN inscripciones i ON e.id = i.id_est
+JOIN cursos c ON i.id_curso = c.id;
+```
 
 **Normalización:**
-• 1NF: atributos atómicos
-• 2NF: sin dependencias parciales
-• 3NF: sin dependencias transitivas
+• 1NF: atributos atómicos (sin listas en celdas)
+• 2NF: cumple 1NF + sin dependencias parciales
+• 3NF: cumple 2NF + sin dependencias transitivas
 
 ¿Quieres un ejercicio de SQL o bases de datos?""",
+
+    "trigonometria": """📐 **Trigonometría — Conceptos esenciales**
+
+**Razones trigonométricas (triángulo rectángulo):**
+• sen(θ) = opuesto / hipotenusa
+• cos(θ) = adyacente / hipotenusa
+• tan(θ) = opuesto / adyacente = sen/cos
+
+**Valores exactos clave:**
+| Ángulo | sen | cos | tan |
+|--------|-----|-----|-----|
+| 0°     | 0   | 1   | 0   |
+| 30°    | 1/2 | √3/2 | 1/√3 |
+| 45°    | √2/2 | √2/2 | 1  |
+| 60°    | √3/2 | 1/2 | √3  |
+| 90°    | 1   | 0   | ∞   |
+
+**Identidades fundamentales:**
+• sen²(θ) + cos²(θ) = 1
+• tan(θ) = sen(θ)/cos(θ)
+• 1 + tan²(θ) = sec²(θ)
+
+**Ángulos complementarios:**
+• sen(90° - θ) = cos(θ)
+• cos(90° - θ) = sen(θ)
+
+💡 Regla mnemotécnica: **SOH-CAH-TOA**
+(Sen=Opuesto/Hipotenusa, Cos=Adyacente/H, Tan=Opuesto/A)
+
+¿Quieres que resuelva un ejercicio de trigonometría?""",
+
+    "regla_tres": """🔄 **Regla de Tres — Simple y Compuesta**
+
+**Regla de tres simple directa:**
+Si A produce B, ¿cuánto produce C?
+x = (C × B) / A
+
+Ejemplo: Si 3 kg cuestan $15, ¿cuánto cuestan 7 kg?
+x = (7 × 15) / 3 = 35 → **$35**
+
+**Regla de tres simple inversa:**
+A más de X, menos de Y (relación inversa)
+x = (A × B) / C
+
+Ejemplo: 6 obreros terminan en 12 días. ¿Cuántos días tardan 9?
+x = (6 × 12) / 9 = 8 → **8 días**
+
+**¿Cómo identificar si es directa o inversa?**
+• Directa: ambas variables aumentan o disminuyen juntas
+• Inversa: cuando una sube, la otra baja
+
+**Regla de tres compuesta:**
+Varias variables relacionadas. Se resuelve con cadena de reglas simples.
+
+¿Tienes un problema de regla de tres para resolver?""",
+
+    "mcd_mcm": """🔢 **MCD y MCM — Cómo calcularlos**
+
+**MCD (Máximo Común Divisor):**
+El mayor número que divide exactamente a todos los datos.
+
+**Método 1 - Factores primos:**
+• Descomponer cada número en factores primos
+• MCD = producto de factores comunes con menor exponente
+
+Ejemplo: MCD(24, 36)
+• 24 = 2³ × 3
+• 36 = 2² × 3²
+• MCD = 2² × 3 = 12
+
+**MCM (Mínimo Común Múltiplo):**
+El menor número múltiplo de todos los dados.
+• MCM = producto de factores comunes e individuales con mayor exponente
+
+Ejemplo: MCM(24, 36)
+• MCM = 2³ × 3² = 8 × 9 = 72
+
+**Relación útil:** MCD(a,b) × MCM(a,b) = a × b
+
+**Método del algoritmo de Euclides (para MCD):**
+1. Divide el mayor entre el menor
+2. El nuevo dividendo es el divisor, el nuevo divisor es el residuo
+3. Repite hasta que el residuo sea 0
+4. El último divisor es el MCD
+
+¿Tienes números para calcular el MCD o MCM?""",
+
+    "quimica_basica": """⚗️ **Química Básica — Conceptos clave**
+
+**Tabla periódica — Grupos importantes:**
+• Grupo 1 (alcalinos): Li, Na, K, Rb, Cs — 1 electrón de valencia
+• Grupo 17 (halógenos): F, Cl, Br, I — 7 electrones de valencia
+• Grupo 18 (nobles): He, Ne, Ar — estables (8 electrones)
+
+**Nomenclatura de compuestos:**
+• Óxidos básicos: metal + O₂  → Ejemplo: Na₂O (óxido de sodio)
+• Óxidos ácidos: no-metal + O₂ → Ejemplo: CO₂ (dióxido de carbono)
+• Ácidos: H + no-metal o radical ácido
+
+**Reacciones químicas básicas:**
+• Síntesis: A + B → AB
+• Descomposición: AB → A + B
+• Sustitución simple: A + BC → AC + B
+• Doble sustitución: AB + CD → AD + CB
+
+**Balanceo de ecuaciones:**
+El número de átomos de cada elemento debe ser igual en ambos lados.
+Ejemplo: H₂ + O₂ → H₂O
+Balanceado: 2H₂ + O₂ → 2H₂O ✓
+
+**Molaridad:** M = moles de soluto / litros de solución
+
+¿Tienes una pregunta específica de química?""",
+
+    "economia_basica": """💰 **Economía Básica — Conceptos fundamentales**
+
+**Oferta y Demanda:**
+• **Ley de la demanda:** A mayor precio → menor cantidad demandada
+• **Ley de la oferta:** A mayor precio → mayor cantidad ofrecida
+• **Equilibrio:** Punto donde oferta = demanda (precio y cantidad de equilibrio)
+
+**Indicadores macroeconómicos:**
+• **PIB (Producto Interno Bruto):** Valor total de bienes y servicios producidos en un país en un período
+• **Inflación:** Aumento generalizado y sostenido de precios. Se mide con el IPC
+• **Desempleo:** % de la PEA sin trabajo activo
+• **PEA:** Población Económicamente Activa (puede trabajar y quiere hacerlo)
+
+**Tipos de mercado:**
+• Competencia perfecta: muchos compradores y vendedores, productos homogéneos
+• Monopolio: un solo vendedor controla el mercado
+• Oligopolio: pocos grandes vendedores dominan el mercado
+
+**Concepto de costo de oportunidad:**
+El valor de la mejor alternativa que se sacrifica al tomar una decisión.
+
+¿Tienes una pregunta específica de economía o administración?""",
 }
 
 # Sinónimos para detectar temas
 SINONIMOS_TEMAS = {
-    "derivada": ["derivada", "derivar", "d/dx", "diferencial", "derivadas"],
-    "integral": ["integral", "integrar", "antiderivada", "primitiva", "integrales"],
-    "limite": ["límite", "limite", "lim", "límites", "tende a"],
-    "ecuacion": ["ecuación", "ecuacion", "ecuaciones", "despejar", "resolver ecuación"],
-    "probabilidad": ["probabilidad", "probabilidades", "probabilistico", "chances"],
-    "estadistica": ["estadística", "estadistica", "media", "varianza", "datos", "promedio"],
-    "fraccion": ["fraccion", "fracción", "fracciones", "numerador", "denominador"],
-    "porcentaje": ["porcentaje", "porcentajes", "descuento", "aumento porcentual"],
-    "pomodoro": ["pomodoro", "técnica pomodoro", "25 minutos", "bloques de tiempo"],
-    "estres": ["estrés", "estres", "ansiedad", "nervios", "angustia", "agotamiento"],
-    "mapa_mental": ["mapa mental", "mapas mentales", "mind map"],
+    "derivada": ["derivada", "derivar", "d/dx", "diferencial", "derivadas", "regla de la cadena", "regla del producto"],
+    "integral": ["integral", "integrar", "antiderivada", "primitiva", "integrales", "área bajo la curva"],
+    "limite": ["límite", "limite", "lim", "límites", "tiende a", "infinito", "l'hopital"],
+    "ecuacion": ["ecuación", "ecuacion", "ecuaciones", "despejar", "resolver ecuación", "cuadrática", "lineal"],
+    "probabilidad": ["probabilidad", "probabilidades", "probabilistico", "chances", "evento", "muestra"],
+    "estadistica": ["estadística", "estadistica", "media", "varianza", "datos", "promedio", "moda", "mediana", "distribución"],
+    "fraccion": ["fraccion", "fracción", "fracciones", "numerador", "denominador", "quebrado"],
+    "porcentaje": ["porcentaje", "porcentajes", "descuento", "aumento porcentual", "tanto por ciento"],
+    "pomodoro": ["pomodoro", "técnica pomodoro", "25 minutos", "bloques de tiempo", "temporizador de estudio"],
+    "estres": ["estrés", "estres", "ansiedad", "nervios", "angustia", "agotamiento", "burnout", "presión académica"],
+    "mapa_mental": ["mapa mental", "mapas mentales", "mind map", "mapa conceptual"],
     "feynman": ["feynman", "técnica feynman", "enseñar para aprender"],
-    "sistemaecuaciones": ["sistema de ecuaciones", "sistema", "2 ecuaciones", "ecuaciones simultáneas"],
-    "geometria": ["geometria", "geometría", "área", "triángulo", "círculo", "pitágoras"],
-    "memoria": ["memoria", "memorizar", "memorización", "recordar", "aprender de memoria"],
-    "fisica": ["física", "fisica", "cinemática", "cinematica", "dinámica", "dinamica", "newton", "caída libre", "mru", "mrua", "energía cinética", "ohm", "circuito", "fuerza", "aceleración", "velocidad"],
-    "programacion": ["programación", "programacion", "código", "codigo", "python", "java", "algoritmo", "pseudocódigo", "poo", "clase", "objeto", "herencia", "estructura de datos", "pila", "cola", "árbol", "recursión", "big o"],
-    "algebra_lineal": ["álgebra lineal", "algebra lineal", "matrices", "matriz", "determinante", "vector", "vectores", "valor propio", "eigenvalor", "espacio vectorial"],
-    "discreta": ["discreta", "matemáticas discretas", "matematicas discretas", "combinatoria", "permutación", "grafo", "grafos", "inducción", "induccion", "conjunto", "relación binaria"],
-    "bases_datos": ["base de datos", "bases de datos", "sql", "select", "join", "normalización", "normalizacion", "consulta sql", "modelo entidad"],
+    "sistemaecuaciones": ["sistema de ecuaciones", "2 ecuaciones", "ecuaciones simultáneas", "eliminación gaussiana"],
+    "geometria": ["geometria", "geometría", "área", "triángulo", "círculo", "pitágoras", "perímetro", "volumen"],
+    "memoria": ["memoria", "memorizar", "memorización", "recordar", "aprender de memoria", "retención"],
+    "fisica": ["física", "fisica", "cinemática", "cinematica", "dinámica", "dinamica", "newton", "caída libre", "mru", "mrua", "energía cinética", "ohm", "circuito", "fuerza", "aceleración", "velocidad", "óptica", "termodinámica"],
+    "programacion": ["programación", "programacion", "código", "codigo", "python", "java", "javascript", "algoritmo", "pseudocódigo", "poo", "clase", "objeto", "herencia", "estructura de datos", "pila", "cola", "árbol", "recursión", "big o", "complejidad"],
+    "algebra_lineal": ["álgebra lineal", "algebra lineal", "matrices", "matriz", "determinante", "vector", "vectores", "valor propio", "eigenvalor", "espacio vectorial", "transformación lineal"],
+    "discreta": ["discreta", "matemáticas discretas", "matematicas discretas", "combinatoria", "permutación", "grafo", "grafos", "inducción", "induccion", "conjunto", "relación binaria", "árbol binario"],
+    "bases_datos": ["base de datos", "bases de datos", "sql", "select", "join", "normalización", "normalizacion", "consulta sql", "modelo entidad", "foreign key", "primary key"],
+    "trigonometria": ["trigonometría", "trigonometria", "seno", "coseno", "tangente", "sen", "cos", "tan", "hipotenusa", "ángulo", "radianes", "identidad trigonométrica", "sohtcahtoa"],
+    "regla_tres": ["regla de tres", "regla de 3", "proporción", "proporcion", "proporcional", "directamente proporcional", "inversamente proporcional"],
+    "mcd_mcm": ["mcd", "mcm", "máximo común divisor", "maximo comun divisor", "mínimo común múltiplo", "minimo comun multiplo", "factores primos", "euclides"],
+    "quimica_basica": ["química", "quimica", "tabla periódica", "tabla periodica", "átomo", "molecula", "molécula", "reacción química", "balancear", "compuesto", "elemento", "molaridad"],
+    "economia_basica": ["economía", "economia", "oferta", "demanda", "pib", "inflación", "inflacion", "microeconomía", "macroeconomía", "mercado", "costo de oportunidad", "monopolio"],
 }
 
 
@@ -695,6 +854,8 @@ SALUDOS = [
     lambda nombre: f"¡Hola{', ' + nombre if nombre else ''}! 👋 Soy **Assura IA**, tu asistente académico inteligente.\n\nEstoy aquí para ayudarte con:\n• 📐 Resolver y generar ejercicios matemáticos paso a paso\n• 📚 Explicar temas académicos en profundidad\n• 🎯 Técnicas de estudio y organización\n• 💆 Manejo del estrés y bienestar\n• 🤝 Conectarte con un asesor personal\n\n¿Con qué te puedo ayudar hoy?",
     lambda nombre: f"¡Buenas{', ' + nombre if nombre else ''}! 🎓 Estoy listo para ayudarte en lo que necesites.\n\nPuedo explicar temas, resolver ejercicios, darte técnicas de estudio o simplemente escucharte si tienes un día difícil. ¿Por dónde empezamos?",
     lambda nombre: f"¡Hola! 😊 Me alegra que estés aquí{', ' + nombre if nombre else ''}.\n\nSoy tu asistente académico de Assura. Puedes escribirme lo que sea: preguntas académicas, ejercicios de matemáticas, dudas sobre tu carrera, o cómo manejar el estrés.\n\n¿Qué necesitas?",
+    lambda nombre: f"👋 ¡Bienvenid@{', ' + nombre if nombre else ''}! Aquí Assura IA.\n\n**Esta semana puedo ayudarte con:**\n📐 Álgebra, Cálculo, Estadística, Geometría, Física\n💻 Programación, Bases de datos, Álgebra Lineal\n📚 Trigonometría, Química, Economía y más\n\nEscribe tu pregunta o ejercicio y lo resolvemos juntos. 🚀",
+    lambda nombre: f"¡Hola{', ' + nombre if nombre else ''}! 🌟 Listo para estudiar.\n\nPuedes pedirme cosas como:\n• *'Explícame qué es una derivada'*\n• *'Dame un ejercicio de estadística difícil'*\n• *'Resuelve: 3x² - 5x + 2 = 0'*\n• *'Técnicas para memorizar mejor'*\n\n¿Por dónde empezamos?",
 ]
 
 DESPEDIDAS = [
@@ -734,7 +895,7 @@ Pero escúchame: **el hecho de que estés aquí, buscando apoyo, ya es una seña
 • Tu cerebro es capaz de aprender esto — con el método correcto
 
 **¿Qué está pasando exactamente?**
-Cuéntame más: ¿es una materia específica? ¿falta de tiempo? ¿no entiendes los temas? ¿sientes que estudias pero no aprende? 
+Cuéntame más: ¿es una materia específica? ¿falta de tiempo? ¿no entiendes los temas? ¿sientes que estudias pero no aprendes?
 
 Con más contexto, puedo ayudarte a encontrar la solución real. No estás solo/a en esto. 💙""",
     
@@ -748,6 +909,20 @@ Quiero que sepas algo: **las dificultades académicas rara vez son por falta de 
 **Paso 1:** Cuéntame qué materia o situación te está causando esto. Vamos a analizarlo juntos y buscar una solución concreta.
 
 No te rindas todavía. 💪""",
+
+    """¡Oye! A veces el camino universitario se siente imposible. Pero quiero que veas algo:
+
+**Algunos datos que ayudan a poner las cosas en perspectiva:**
+• Einstein reprobó el examen de ingreso a la universidad
+• Edison falló miles de veces antes de inventar la bombilla
+• El fracaso es parte del proceso de aprendizaje, no el final
+
+**Hoy mismo podemos hacer algo concreto:**
+1. 📝 Dime cuál materia te está dando más problemas
+2. 🔍 Analizamos juntos qué parte específicamente no está clara
+3. 📐 Trabajamos en eso con ejercicios paso a paso
+
+¿Cuál es la materia o el tema que más te preocupa ahora mismo? 🤝""",
 ]
 
 ASESORIA_RESPUESTA = """¡Buena decisión buscar asesoría! La orientación personalizada puede marcar una gran diferencia.
@@ -848,71 +1023,106 @@ class AssuraBrain:
         """
         Genera una respuesta completa para el mensaje del estudiante.
 
-        Args:
-            mensaje: El texto del estudiante
-            historial: Lista de mensajes previos [{role, content, intencion}]
-            nombre_estudiante: Nombre del estudiante para personalización
-
-        Returns:
-            dict con respuesta, intencion, categoria, ejercicio_data, recursos, consejo
+        Arquitectura híbrida:
+        1. Detecta la intención del mensaje con IntentDetector (local, instantáneo).
+        2. Si la intención es conocida → usa el handler local correspondiente (~0 ms).
+        3. Solo si la intención es "general" y no se detecta un tema académico
+           → delega a Gemini como fallback.
         """
         historial = historial or []
         intencion = self.detector.detect(mensaje, historial)
 
-        resultado = {
-            "respuesta": "",
+        # ── Handlers locales (instantáneos) ──────────────────────────
+        if intencion == "saludo":
+            respuesta = random.choice(SALUDOS)(nombre_estudiante)
+            return self._wrap(respuesta, intencion, None, 0.98)
+
+        if intencion == "despedida":
+            return self._wrap(random.choice(DESPEDIDAS), intencion, None, 0.97)
+
+        if intencion == "agradecimiento":
+            return self._wrap(random.choice(AGRADECIMIENTOS), intencion, None, 0.96)
+
+        if intencion == "identidad":
+            return self._wrap(random.choice(IDENTIDAD_RESPUESTAS), intencion, None, 0.99)
+
+        if intencion == "ayuda":
+            return self._wrap(AYUDA_RESPUESTA, intencion, None, 0.98)
+
+        if intencion == "ejercicio_pedir":
+            resultado = self._generar_ejercicio(mensaje)
+            resultado["intencion"] = intencion
+            resultado["confianza"] = resultado.get("confianza", 0.95)
+            return resultado
+
+        if intencion == "ejercicio_enviar":
+            resultado = self._resolver_ejercicio(mensaje)
+            resultado["intencion"] = intencion
+            resultado["confianza"] = resultado.get("confianza", 0.95)
+            return resultado
+
+        if intencion == "explicar_tema":
+            resultado = self._explicar_tema(mensaje)
+            resultado["intencion"] = intencion
+            resultado["confianza"] = resultado.get("confianza", 0.95)
+            return resultado
+
+        if intencion == "motivacion":
+            return self._wrap(random.choice(MOTIVACION_RESPUESTAS), intencion, "estres_presion", 0.94)
+
+        if intencion == "estres_emocional":
+            return self._wrap(
+                EXPLICACIONES_TEMAS.get("estres", random.choice(MOTIVACION_RESPUESTAS)),
+                intencion, "estres_presion", 0.94,
+            )
+
+        if intencion == "asesoria":
+            return self._wrap(ASESORIA_RESPUESTA, intencion, "solicitud_asesoria", 0.96)
+
+        if intencion == "tecnica_estudio":
+            resultado = self._responder_tecnica_estudio(mensaje)
+            resultado["intencion"] = intencion
+            resultado["confianza"] = resultado.get("confianza", 0.95)
+            return resultado
+
+        # ── Intención "general": intentar tema académico local primero ──
+        tema = self.detector.detectar_tema(mensaje)
+        if tema and tema in EXPLICACIONES_TEMAS:
+            resultado = self._explicar_tema(mensaje)
+            resultado["intencion"] = "explicar_tema"
+            resultado["confianza"] = resultado.get("confianza", 0.90)
+            return resultado
+
+        # ── Fallback: Gemini solo para mensajes realmente generales ──
+        try:
+            from llm_engine import generar_respuesta_chat
+
+            resultado = generar_respuesta_chat(mensaje, historial, nombre_estudiante)
+            if resultado and "error" not in resultado:
+                resultado["intencion"] = resultado.get("intencion", "general")
+                resultado["confianza"] = resultado.get("confianza", 0.85)
+                return resultado
+        except Exception as e:
+            print(f"⚠️ Gemini no disponible, usando respuesta local: {e}")
+
+        # ── Último fallback: respuesta local genérica ────────────────
+        resultado = self._respuesta_general(mensaje, historial)
+        resultado["intencion"] = "general"
+        resultado["confianza"] = resultado.get("confianza", 0.80)
+        return resultado
+
+    # ── Utilidad para empaquetar respuestas simples ──────────────────
+    def _wrap(self, respuesta: str, intencion: str, categoria: Optional[str], confianza: float) -> dict:
+        """Empaqueta una respuesta simple en el formato estándar."""
+        return {
+            "respuesta": respuesta,
             "intencion": intencion,
-            "categoria": self._intencion_a_categoria(intencion),
-            "confianza": 0.92,
+            "categoria": categoria or self._intencion_a_categoria(intencion),
+            "confianza": confianza,
             "ejercicio_data": None,
             "recursos": [],
             "consejo_rapido": None,
         }
-
-        # ── Routing por intención ──────────────────────────────────────────
-        if intencion == "saludo":
-            resultado["respuesta"] = random.choice(SALUDOS)(nombre_estudiante)
-
-        elif intencion == "despedida":
-            resultado["respuesta"] = random.choice(DESPEDIDAS)
-
-        elif intencion == "agradecimiento":
-            resultado["respuesta"] = random.choice(AGRADECIMIENTOS)
-
-        elif intencion == "identidad":
-            resultado["respuesta"] = random.choice(IDENTIDAD_RESPUESTAS)
-
-        elif intencion == "ayuda":
-            resultado["respuesta"] = AYUDA_RESPUESTA
-
-        elif intencion == "ejercicio_pedir":
-            resultado.update(self._generar_ejercicio(mensaje))
-
-        elif intencion == "ejercicio_enviar":
-            resultado.update(self._resolver_ejercicio(mensaje))
-
-        elif intencion == "explicar_tema":
-            resultado.update(self._explicar_tema(mensaje))
-
-        elif intencion == "motivacion":
-            resultado["respuesta"] = random.choice(MOTIVACION_RESPUESTAS)
-            resultado["categoria"] = "estres_presion"
-
-        elif intencion == "estres_emocional":
-            resultado["respuesta"] = EXPLICACIONES_TEMAS["estres"]
-            resultado["categoria"] = "estres_presion"
-
-        elif intencion == "asesoria":
-            resultado["respuesta"] = ASESORIA_RESPUESTA
-            resultado["categoria"] = "solicitud_asesoria"
-
-        elif intencion == "tecnica_estudio":
-            resultado.update(self._responder_tecnica_estudio(mensaje))
-
-        else:
-            resultado.update(self._respuesta_general(mensaje, historial))
-
-        return resultado
 
     # ── Handlers específicos ───────────────────────────────────────────────
 
@@ -1054,10 +1264,18 @@ class AssuraBrain:
             "respuesta": (
                 f"Me gustaría explicarte ese tema mejor. 📚\n\n"
                 f"**Temas que puedo explicar en detalle:**\n"
-                f"• Matemáticas: derivadas, integrales, límites, ecuaciones, fracciones, porcentajes, probabilidad, estadística, geometría\n"
-                f"• Técnicas de estudio: Pomodoro, Feynman, mapas mentales, repaso espaciado\n"
-                f"• Bienestar: manejo del estrés, técnicas de concentración\n\n"
-                f"¿Sobre cuál de estos temas me preguntas? O puedes escribir: *'Explícame [el tema]'*"
+                f"• **Cálculo:** derivadas, integrales, límites\n"
+                f"• **Álgebra:** ecuaciones, sistemas, factorización, fracciones, porcentajes\n"
+                f"• **Geometría & Trigonometría:** áreas, perímetros, seno, coseno, Pitágoras\n"
+                f"• **Estadística & Probabilidad:** media, varianza, distribuciones\n"
+                f"• **Álgebra Lineal:** matrices, determinantes, vectores\n"
+                f"• **Física:** cinemática, dinámica, energía, electricidad\n"
+                f"• **Programación:** algoritmos, POO, estructuras de datos, Big O\n"
+                f"• **Bases de datos:** SQL, JOIN, normalización\n"
+                f"• **Química & Economía:** tabla periódica, oferta y demanda, PIB\n"
+                f"• **Técnicas de estudio:** Pomodoro, Feynman, mapas mentales\n"
+                f"• **Bienestar:** manejo del estrés, concentración\n\n"
+                f"¿Sobre cuál de estos temas me preguntas? Escribe: *'Explícame [el tema]'*"
             ),
             "categoria": "metodologia_estudio",
         }

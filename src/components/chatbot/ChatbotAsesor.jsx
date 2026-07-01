@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Menu from "../menu";
 import Header from "../header";
 import axios from "axios";
 
 const BACKEND = "http://localhost:3001";
+const PYTHON_API = "http://localhost:8000";
 
 const IconBook = () => <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IconAlert = () => <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
@@ -85,9 +86,24 @@ export default function ChatbotAsesor() {
   const [consultas, setConsultas] = useState([]);
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("dashboard"); // dashboard | consultas | estudiantes
+  const [tab, setTab] = useState("dashboard"); // dashboard | consultas | estudiantes | chatbot
   const [bertActivo, setBertActivo] = useState(null);
   const [detalle, setDetalle] = useState(null);
+
+  // ── Estado del chatbot del asesor ─────────────────────────────────────────────
+  const [chatMensajes, setChatMensajes] = useState([
+    { role: "bot", content: "¡Hola, Asesor! 👋 Soy **Assura IA**. Puedes preguntarme sobre cualquier tema académico, pedir ejercicios para tus estudiantes o explorar técnicas de enseñanza efectivas. ¿En qué te ayudo hoy?" }
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistorial, setChatHistorial] = useState([]);
+  const chatEndRef = useRef(null);
+  const chatInputRef = useRef(null);
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+
+  useEffect(() => {
+    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+  }, [chatMensajes]);
 
   useEffect(() => {
     cargarDatos();
@@ -193,6 +209,7 @@ export default function ChatbotAsesor() {
               <TabBtn id="dashboard" label="Dashboard" svgIcon={<IconTrend />} />
               <TabBtn id="consultas" label="Consultas" svgIcon={<IconList />} />
               <TabBtn id="estudiantes" label="Estudiantes" svgIcon={<IconUsers />} />
+              <TabBtn id="chatbot" label="Asistente IA" svgIcon={<IconMsg />} />
             </div>
 
             {loading ? (
@@ -455,6 +472,23 @@ export default function ChatbotAsesor() {
                     )}
                   </div>
                 )}
+
+                {/* ═══ TAB CHATBOT IA ═══ */}
+                {tab === "chatbot" && (
+                  <ChatbotAsesorPanel
+                    chatMensajes={chatMensajes}
+                    setChatMensajes={setChatMensajes}
+                    chatInput={chatInput}
+                    setChatInput={setChatInput}
+                    chatLoading={chatLoading}
+                    setChatLoading={setChatLoading}
+                    chatHistorial={chatHistorial}
+                    setChatHistorial={setChatHistorial}
+                    chatEndRef={chatEndRef}
+                    chatInputRef={chatInputRef}
+                    usuario={usuario}
+                  />
+                )}
               </>
             )}
 
@@ -497,6 +531,323 @@ export default function ChatbotAsesor() {
             )}
           </main>
         </div>
+      </div>
+    </>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════
+// CHATBOT IA PARA ASESOR — Nuevo módulo de asistente con IA
+// ════════════════════════════════════════════════════════════════
+
+function ChatbotAsesorPanel({
+  chatMensajes, setChatMensajes,
+  chatInput, setChatInput,
+  chatLoading, setChatLoading,
+  chatHistorial, setChatHistorial,
+  chatEndRef, chatInputRef,
+  usuario
+}) {
+  const nombreAsesor = usuario?.nombres || "Asesor";
+
+  const enviarMensaje = async (e) => {
+    e?.preventDefault();
+    const texto = chatInput.trim();
+    if (!texto || chatLoading) return;
+
+    const msgUser = { role: "user", content: texto };
+    setChatMensajes(prev => [...prev, msgUser]);
+    setChatInput("");
+    if (chatInputRef.current) chatInputRef.current.style.height = "auto";
+    setChatLoading(true);
+
+    try {
+      const historialApi = chatHistorial.map(m => ({
+        role: m.role, content: m.content,
+        intencion: m.intencion || null, categoria: m.categoria || null
+      }));
+
+      const res = await axios.post(`${PYTHON_API}/chat`, {
+        mensaje: texto,
+        historial: historialApi,
+        nombre_estudiante: nombreAsesor,
+      });
+
+      const data = res.data;
+      const msgBot = {
+        role: "bot",
+        content: data.respuesta,
+        intencion: data.intencion,
+        categoria: data.categoria,
+        ejercicio_data: data.ejercicio_data,
+        recursos: data.recursos,
+      };
+
+      setChatMensajes(prev => [...prev, msgBot]);
+      setChatHistorial(prev => [...prev, { role: "user", content: texto }, msgBot]);
+    } catch {
+      setChatMensajes(prev => [...prev, {
+        role: "bot",
+        content: "❌ No pude conectar con el asistente IA. Verifica que el servicio Python esté corriendo en el puerto 8000."
+      }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const limpiarChat = () => {
+    setChatMensajes([{ role: "bot", content: "¡Chat reiniciado! 😊 ¿En qué te puedo ayudar?" }]);
+    setChatHistorial([]);
+  };
+
+  const handleInput = (e) => {
+    setChatInput(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
+
+  const renderMarkdown = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/\n/g, "<br/>");
+  };
+
+  const SUGERENCIAS = [
+    "📚 Explícame la regla de la cadena",
+    "📐 Dame un ejercicio de álgebra lineal difícil",
+    "💻 ¿Cómo funciona la recursividad?",
+    "🎯 Técnica Feynman para enseñar",
+    "📊 Ejercicio de probabilidad fácil",
+    "⚗️ Explícame el balanceo de ecuaciones",
+  ];
+
+  return (
+    <>
+      <style>{`
+        .ai-chat-messages { scrollbar-width: thin; scrollbar-color: #E5E7EB transparent; }
+        .ai-chat-messages::-webkit-scrollbar { width: 5px; }
+        .ai-chat-messages::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+        .ai-send-btn:not(:disabled):hover { background: linear-gradient(135deg,#B91C1C,#991B1B) !important; transform: scale(1.04); }
+        .ai-send-btn { transition: all 0.15s ease; }
+        .ai-sugg:hover { background: #FEF2F2 !important; border-color: #DC2626 !important; color: #DC2626 !important; }
+        .ai-sugg { transition: all 0.15s; }
+        @keyframes ai-fadein { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .ai-msg-in { animation: ai-fadein 0.22s ease; }
+        @keyframes ai-bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+      `}</style>
+
+      <div style={{
+        background: "white", borderRadius: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
+        overflow: "hidden", display: "flex", flexDirection: "column", height: "70vh",
+        fontFamily: "'Inter', sans-serif"
+      }}>
+
+        {/* Header */}
+        <div style={{
+          padding: "16px 24px",
+          background: "linear-gradient(135deg, #DC2626, #B91C1C)",
+          display: "flex", justifyContent: "space-between", alignItems: "center"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 46, height: 46, borderRadius: "50%",
+              background: "rgba(255,255,255,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24
+            }}>🤖</div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "white" }}>
+                Assura IA — Modo Asesor
+              </h3>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "rgba(255,255,255,0.8)" }}>
+                Asistente académico con IA • Hola, {nombreAsesor} 👋
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={limpiarChat}
+            style={{
+              padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.35)",
+              background: "rgba(255,255,255,0.15)", color: "white",
+              fontSize: 12, fontWeight: 600, cursor: "pointer"
+            }}
+          >
+            🗑️ Nuevo chat
+          </button>
+        </div>
+
+        {/* Sugerencias rápidas */}
+        <div style={{
+          padding: "10px 20px", borderBottom: "1px solid #F3F4F6",
+          background: "#FAFAFA", display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center"
+        }}>
+          <span style={{ fontSize: 11, color: "#9CA3AF", marginRight: 2 }}>Sugerencias:</span>
+          {SUGERENCIAS.map((s, i) => (
+            <button
+              key={i}
+              className="ai-sugg"
+              onClick={() => { setChatInput(s.replace(/^\S+\s/, "")); chatInputRef.current?.focus(); }}
+              style={{
+                padding: "4px 11px", borderRadius: 20, border: "1px solid #E5E7EB",
+                background: "white", fontSize: 11.5, color: "#374151",
+                cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap"
+              }}
+            >{s}</button>
+          ))}
+        </div>
+
+        {/* Mensajes */}
+        <div
+          className="ai-chat-messages"
+          style={{ flex: 1, overflowY: "auto", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}
+        >
+          {chatMensajes.map((msg, i) => {
+            const esBot = msg.role === "bot";
+            return (
+              <div key={i} className="ai-msg-in" style={{ display: "flex", justifyContent: esBot ? "flex-start" : "flex-end", gap: 9 }}>
+                {esBot && (
+                  <div style={{
+                    width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+                    background: "linear-gradient(135deg,#DC2626,#B91C1C)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 16, alignSelf: "flex-end", marginBottom: 2
+                  }}>🤖</div>
+                )}
+                <div style={{ maxWidth: "72%" }}>
+                  <div style={{
+                    padding: "11px 15px",
+                    borderRadius: esBot ? "4px 18px 18px 18px" : "18px 4px 18px 18px",
+                    background: esBot ? "white" : "linear-gradient(135deg,#DC2626,#B91C1C)",
+                    color: esBot ? "#111827" : "white",
+                    boxShadow: esBot ? "0 1px 4px rgba(0,0,0,0.08)" : "0 2px 10px rgba(220,38,38,0.25)",
+                    border: esBot ? "1px solid #F3F4F6" : "none",
+                    fontSize: 13.5, lineHeight: 1.65
+                  }}>
+                    <span dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                  </div>
+
+                  {/* Card de ejercicio */}
+                  {esBot && msg.ejercicio_data && (
+                    <div style={{
+                      marginTop: 8, padding: "13px 15px", background: "#FEF3F2",
+                      borderRadius: 12, border: "1px solid #FECACA"
+                    }}>
+                      <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 13, color: "#DC2626" }}>
+                        {msg.ejercicio_data.tipo_accion === "generacion" ? "🎯 Ejercicio generado" : "🧠 Resolución paso a paso"}
+                      </p>
+                      {msg.ejercicio_data.ejercicio?.enunciado && (
+                        <p style={{ margin: "0 0 8px", fontSize: 13, color: "#374151" }}>
+                          <strong>Enunciado:</strong> {msg.ejercicio_data.ejercicio.enunciado}
+                        </p>
+                      )}
+                      {(msg.ejercicio_data.ejercicio?.solucion?.pasos || msg.ejercicio_data.solucion?.pasos || []).map((paso, pi) => (
+                        <p key={pi} style={{ margin: "3px 0", fontSize: 12, color: "#6B7280", paddingLeft: 8 }}>{paso}</p>
+                      ))}
+                      {(msg.ejercicio_data.ejercicio?.solucion?.resultado || msg.ejercicio_data.solucion?.resultado) && (
+                        <p style={{ margin: "8px 0 0", fontSize: 13, fontWeight: 700, color: "#059669" }}>
+                          ✅ Resultado: {msg.ejercicio_data.ejercicio?.solucion?.resultado || msg.ejercicio_data.solucion?.resultado}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Recursos adicionales */}
+                  {esBot && msg.recursos?.length > 0 && (
+                    <div style={{ marginTop: 6, paddingLeft: 4 }}>
+                      {msg.recursos.map((r, ri) => (
+                        <p key={ri} style={{ margin: "2px 0", fontSize: 11.5, color: "#9CA3AF" }}>{r}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {!esBot && (
+                  <div style={{
+                    width: 34, height: 34, borderRadius: "50%", flexShrink: 0,
+                    background: "linear-gradient(135deg,#7C3AED,#5B21B6)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 700, color: "white", fontSize: 14, alignSelf: "flex-end", marginBottom: 2
+                  }}>{(nombreAsesor?.[0] || "A").toUpperCase()}</div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Typing indicator */}
+          {chatLoading && (
+            <div className="ai-msg-in" style={{ display: "flex", gap: 9, alignItems: "center" }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: "50%",
+                background: "linear-gradient(135deg,#DC2626,#B91C1C)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16
+              }}>🤖</div>
+              <div style={{ padding: "11px 15px", background: "white", borderRadius: "4px 18px 18px 18px", border: "1px solid #F3F4F6", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {[0,1,2].map(d => (
+                    <div key={d} style={{
+                      width: 7, height: 7, borderRadius: "50%", background: "#DC2626",
+                      animation: "ai-bounce 1.2s ease infinite",
+                      animationDelay: `${d * 0.2}s`
+                    }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* Input area */}
+        <form
+          onSubmit={enviarMensaje}
+          style={{
+            padding: "12px 18px", background: "white",
+            borderTop: "1px solid #E5E7EB",
+            display: "flex", alignItems: "flex-end", gap: 10,
+            boxShadow: "0 -2px 8px rgba(0,0,0,0.04)"
+          }}
+        >
+          <textarea
+            ref={chatInputRef}
+            value={chatInput}
+            onChange={handleInput}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarMensaje(e); } }}
+            placeholder="Escribe tu pregunta académica... (Enter para enviar, Shift+Enter para nueva línea)"
+            rows={1}
+            style={{
+              flex: 1, padding: "11px 16px", borderRadius: 22,
+              border: "1.5px solid #E5E7EB", fontSize: 13.5,
+              fontFamily: "inherit", outline: "none", resize: "none",
+              lineHeight: 1.5, background: "#F9FAFB",
+              transition: "border-color 0.2s", minHeight: 44, maxHeight: 120,
+              overflow: "auto", boxSizing: "border-box", color: "#111827"
+            }}
+            onFocus={e => e.target.style.borderColor = "#DC2626"}
+            onBlur={e => e.target.style.borderColor = "#E5E7EB"}
+          />
+          <button
+            type="submit"
+            className="ai-send-btn"
+            disabled={!chatInput.trim() || chatLoading}
+            style={{
+              width: 44, height: 44, borderRadius: "50%", border: "none",
+              background: chatInput.trim() && !chatLoading
+                ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "#E5E7EB",
+              color: chatInput.trim() && !chatLoading ? "white" : "#9CA3AF",
+              cursor: chatInput.trim() && !chatLoading ? "pointer" : "not-allowed",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: chatInput.trim() ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
+            }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+              <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </form>
       </div>
     </>
   );

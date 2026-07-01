@@ -661,7 +661,15 @@ class ExerciseGenerator:
         self.solver = ExerciseSolver()
 
     def generar(self, materia: str = "algebra", dificultad: str = "medio") -> dict:
-        """Genera un ejercicio aleatorio de la materia indicada."""
+        """Genera un ejercicio de la materia indicada usando Gemini LLM, con fallback a reglas."""
+        from llm_engine import generar_ejercicio_materia
+        
+        # Intentar con la IA
+        ejercicio_ia = generar_ejercicio_materia(materia, dificultad)
+        if ejercicio_ia and "error" not in ejercicio_ia:
+            return ejercicio_ia
+            
+        # Fallback estático
         generators = {
             "algebra": self._gen_algebra,
             "calculo": self._gen_calculo,
@@ -728,25 +736,126 @@ class ExerciseGenerator:
         datos = [random.randint(5, 50) for _ in range(n)]
         datos_str = ", ".join(str(d) for d in datos)
         if dif == "facil":
-            enunciado = f"Calcula la media de: {datos_str}"
+            opciones = [
+                lambda: (f"Calcula la media de: {datos_str}", self.solver.solve(f"media de {datos_str}")),
+                lambda: (f"Calcula la mediana de: {', '.join(str(d) for d in sorted(datos))}",
+                         self._solucion_mediana(sorted(datos))),
+                lambda: (f"Calcula la moda de los datos: {', '.join(str(d) for d in [random.randint(1,5) for _ in range(8)])}",
+                         self._solucion_moda([random.randint(1,5) for _ in range(8)])),
+            ]
+            enunciado, solucion = random.choice(opciones)()
+        elif dif == "dificil":
+            opciones = [
+                lambda: (f"Calcula la desviación estándar de: {datos_str}", self.solver.solve(f"desviación estándar de {datos_str}")),
+                lambda: self._gen_combinatoria(),
+            ]
+            enunciado, solucion = random.choice(opciones)()
         else:
             enunciado = f"Calcula la desviación estándar de: {datos_str}"
-        solucion = self.solver.solve(enunciado)
+            solucion = self.solver.solve(enunciado)
         return {"materia": "estadistica", "dificultad": dif, "enunciado": enunciado, "solucion": solucion}
+
+    def _solucion_mediana(self, datos_ordenados):
+        n = len(datos_ordenados)
+        if n % 2 == 0:
+            med = (datos_ordenados[n//2 - 1] + datos_ordenados[n//2]) / 2
+            pasos = [f"Paso 1: Datos ordenados: {datos_ordenados}",
+                     f"Paso 2: n={n} (par) → mediana = promedio de los valores centrales",
+                     f"Paso 3: ({datos_ordenados[n//2-1]} + {datos_ordenados[n//2]}) / 2 = {med}"]
+        else:
+            med = datos_ordenados[n//2]
+            pasos = [f"Paso 1: Datos ordenados: {datos_ordenados}",
+                     f"Paso 2: n={n} (impar) → mediana = valor central",
+                     f"Paso 3: Mediana = {med}"]
+        return {"exito": True, "materia": "estadistica", "tipo": "mediana",
+                "expresion": str(datos_ordenados), "resultado": str(med), "pasos": pasos}
+
+    def _solucion_moda(self, datos):
+        from collections import Counter
+        conteo = Counter(datos)
+        moda = conteo.most_common(1)[0][0]
+        freq = conteo.most_common(1)[0][1]
+        pasos = [f"Paso 1: Datos: {datos}",
+                 f"Paso 2: Contar frecuencia de cada valor: {dict(conteo)}",
+                 f"Paso 3: El valor más frecuente es {moda} (aparece {freq} veces)"]
+        return {"exito": True, "materia": "estadistica", "tipo": "moda",
+                "expresion": str(datos), "resultado": str(moda), "pasos": pasos}
+
+    def _gen_combinatoria(self):
+        n = random.randint(6, 12)
+        r = random.randint(2, 4)
+        comb = math.factorial(n) // (math.factorial(r) * math.factorial(n - r))
+        enunciado = f"¿De cuántas formas se pueden elegir {r} personas de un grupo de {n}?"
+        solucion = {"exito": True, "materia": "estadistica", "tipo": "combinatoria",
+                    "expresion": f"C({n},{r})", "resultado": str(comb),
+                    "pasos": [f"Paso 1: Combinación C({n},{r}) = {n}! / ({r}! × ({n}-{r})!)",
+                              f"Paso 2: = {math.factorial(n)} / ({math.factorial(r)} × {math.factorial(n-r)})",
+                              f"Paso 3: = {comb} formas"]}
+        return enunciado, solucion
 
     def _gen_aritmetica(self, dif: str) -> dict:
         if dif == "facil":
-            a, b = random.randint(1, 20), random.randint(1, 20)
-            enunciado = f"Calcula el MCD de {a} y {b}"
+            opciones = [
+                lambda: (f"Calcula el MCD de {random.randint(1,20)} y {random.randint(1,20)}",
+                         self.solver.solve(f"mcd {random.randint(1,20)} {random.randint(1,20)}")),
+                lambda: self._aritm_fraccion_suma(),
+                lambda: self._aritm_regla_tres_directa(),
+            ]
+            enunciado, solucion = random.choice(opciones)()
         elif dif == "dificil":
-            n = random.randint(5, 10)
-            enunciado = f"¿Cuánto es {n}! (factorial de {n})?"
+            n_val = random.randint(5, 10)
+            enunciado = f"¿Cuánto es {n_val}! (factorial de {n_val})?"
+            solucion = self.solver.solve(enunciado)
         else:
-            a = random.randint(10, 100)
-            b = random.randint(10, 50)
-            enunciado = f"¿Cuánto es el {b}% de {a}?"
-        solucion = self.solver.solve(enunciado)
+            opciones = [
+                lambda: (f"¿Cuánto es el {random.randint(10,50)}% de {random.randint(10,100)}?",
+                         self.solver.solve(f"{random.randint(10,50)}% de {random.randint(10,100)}")),
+                lambda: self._aritm_regla_tres_inversa(),
+            ]
+            enunciado, solucion = random.choice(opciones)()
         return {"materia": "aritmetica", "dificultad": dif, "enunciado": enunciado, "solucion": solucion}
+
+    def _aritm_fraccion_suma(self):
+        a1, b1 = random.randint(1,5), random.randint(2,8)
+        a2, b2 = random.randint(1,5), random.randint(2,8)
+        mcm = (b1 * b2) // math.gcd(b1, b2)
+        num = a1 * (mcm // b1) + a2 * (mcm // b2)
+        g = math.gcd(num, mcm)
+        res = f"{num//g}/{mcm//g}" if mcm//g != 1 else str(num//g)
+        enunciado = f"Suma las fracciones: {a1}/{b1} + {a2}/{b2}"
+        solucion = {"exito": True, "materia": "aritmetica", "tipo": "suma de fracciones",
+                    "expresion": f"{a1}/{b1} + {a2}/{b2}", "resultado": res,
+                    "pasos": [f"Paso 1: MCM({b1},{b2}) = {mcm}",
+                              f"Paso 2: {a1}/{b1} = {a1*(mcm//b1)}/{mcm},  {a2}/{b2} = {a2*(mcm//b2)}/{mcm}",
+                              f"Paso 3: Suma = ({a1*(mcm//b1)} + {a2*(mcm//b2)}) / {mcm} = {num}/{mcm}",
+                              f"Paso 4: Simplificando: {res}"]}
+        return enunciado, solucion
+
+    def _aritm_regla_tres_directa(self):
+        a = random.randint(2, 10)
+        b = random.randint(5, 50)
+        c = random.randint(3, 15)
+        x = round((c * b) / a, 2)
+        enunciado = f"Si {a} kg cuestan ${b}, ¿cuánto cuestan {c} kg? (Regla de tres)"
+        solucion = {"exito": True, "materia": "aritmetica", "tipo": "regla de tres directa",
+                    "expresion": f"{a} kg = ${b}, {c} kg = ?", "resultado": f"${x}",
+                    "pasos": [f"Paso 1: {a} kg → ${b}",
+                              f"Paso 2: {c} kg → x",
+                              f"Paso 3: x = ({c} × {b}) / {a} = {x}"]}
+        return enunciado, solucion
+
+    def _aritm_regla_tres_inversa(self):
+        obreros = random.randint(4, 10)
+        dias = random.randint(6, 20)
+        nuevos = random.randint(2, obreros - 1)
+        x = round((obreros * dias) / nuevos, 1)
+        enunciado = f"{obreros} obreros terminan una obra en {dias} días. ¿Cuántos días necesitan {nuevos} obreros? (inversa)"
+        solucion = {"exito": True, "materia": "aritmetica", "tipo": "regla de tres inversa",
+                    "expresion": f"{obreros} obreros = {dias} días, {nuevos} obreros = ?", "resultado": f"{x} días",
+                    "pasos": [f"Paso 1: Relación inversa: a menos obreros, más días",
+                              f"Paso 2: {obreros} × {dias} = {nuevos} × x",
+                              f"Paso 3: x = ({obreros} × {dias}) / {nuevos} = {x} días"]}
+        return enunciado, solucion
 
     def _gen_geometria(self, dif: str) -> dict:
         if dif == "facil":
@@ -870,10 +979,69 @@ class ExerciseGenerator:
                  f"Paso 2: R_total = R₁ + R₂ = {r1} + {r2} = {rt} Ω",
                  f"Paso 3: I = V / R = {v} / {rt} = {i} A"])
 
+    def _fisica_ohm_paralelo(self):
+        v = random.choice([12, 24, 48])
+        r1 = random.randint(20, 80)
+        r2 = random.randint(20, 80)
+        rt = round((r1 * r2) / (r1 + r2), 4)
+        i = round(v / rt, 4)
+        return (f"Circuito en paralelo: V = {v} V, R₁ = {r1} Ω, R₂ = {r2} Ω. Calcula la corriente total.",
+                f"I = {i} A",
+                [f"Paso 1: 1/R_total = 1/R₁ + 1/R₂ = 1/{r1} + 1/{r2}",
+                 f"Paso 2: R_total = ({r1}×{r2}) / ({r1}+{r2}) = {rt} Ω",
+                 f"Paso 3: I = V/R = {v}/{rt} = {i} A"])
+
+    def _fisica_trabajo(self):
+        f = random.randint(10, 200)
+        d = random.randint(5, 50)
+        theta = random.choice([0, 30, 45, 60])
+        import math as _math
+        cos_theta = round(_math.cos(_math.radians(theta)), 4)
+        w = round(f * d * cos_theta, 2)
+        return (f"Una fuerza de {f} N se aplica a un ángulo de {theta}° y desplaza un objeto {d} m. Calcula el trabajo.",
+                f"W = {w} J",
+                [f"Paso 1: F = {f} N, d = {d} m, θ = {theta}°",
+                 f"Paso 2: W = F × d × cos(θ) = {f} × {d} × cos({theta}°)",
+                 f"Paso 3: W = {f} × {d} × {cos_theta} = {w} J"])
+
+    def _fisica_newton2(self):
+        m = random.randint(2, 50)
+        a = round(random.uniform(1, 20), 1)
+        f = round(m * a, 2)
+        return (f"Un objeto de {m} kg tiene una aceleración de {a} m/s². ¿Cuál es la fuerza neta?",
+                f"F = {f} N",
+                [f"Paso 1: m = {m} kg, a = {a} m/s²",
+                 f"Paso 2: 2ª Ley de Newton: F = m × a",
+                 f"Paso 3: F = {m} × {a} = {f} N"])
+
     def _manual_exercise(self, materia, dif, enunciado, resultado, pasos):
         return {"materia": materia, "dificultad": dif, "enunciado": enunciado,
                 "solucion": {"exito": True, "materia": materia, "tipo": materia,
                              "expresion": enunciado, "resultado": resultado, "pasos": pasos}}
+
+    def _gen_fisica(self, dif: str) -> dict:
+        g = 9.8
+        ejercicios = []
+        if dif == "facil":
+            ejercicios = [
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_mru()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_peso()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_newton2()),
+            ]
+        elif dif == "dificil":
+            ejercicios = [
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_energia()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_ohm_serie()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_ohm_paralelo()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_trabajo()),
+            ]
+        else:
+            ejercicios = [
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_mrua()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_caida()),
+                lambda: self._manual_exercise("fisica", dif, *self._fisica_newton2()),
+            ]
+        return random.choice(ejercicios)()
 
     def _gen_programacion(self, dif: str) -> dict:
         if dif == "facil":
@@ -887,6 +1055,12 @@ class ExerciseGenerator:
                 {"e": "Escribe una función en Python que sume todos los elementos de una lista.",
                  "r": "def sumar(lista): return sum(lista)",
                  "p": ["Paso 1: Definir función con parámetro lista", "Paso 2: Usar sum() o un ciclo acumulador", "Paso 3: Retornar el resultado"]},
+                {"e": "¿Qué imprime este código? x = 5; y = 3; print(x > y, x == y, x != y)",
+                 "r": "True False True",
+                 "p": ["Paso 1: x=5, y=3", "Paso 2: x>y → 5>3 = True", "Paso 3: x==y → 5==3 = False, x!=y → 5!=3 = True"]},
+                {"e": "Escribe una función Python que calcule el factorial de un número con un bucle (sin recursión).",
+                 "r": "def factorial(n): r=1;\n  for i in range(2,n+1): r*=i; return r",
+                 "p": ["Paso 1: Inicializar resultado = 1", "Paso 2: Ciclo desde 2 hasta n multiplicando", "Paso 3: Retornar resultado"]},
             ]
         elif dif == "dificil":
             ejercicios = [
@@ -899,15 +1073,24 @@ class ExerciseGenerator:
                 {"e": "Explica la diferencia entre una Pila (Stack) y una Cola (Queue) con ejemplos de uso.",
                  "r": "Pila: LIFO (Ctrl+Z). Cola: FIFO (fila de impresión)",
                  "p": ["Paso 1: Pila → Last In First Out (el último en entrar sale primero)", "Paso 2: Cola → First In First Out (el primero en entrar sale primero)", "Paso 3: Pila: historial del navegador. Cola: cola de procesos del SO"]},
+                {"e": "Implementa el patrón Singleton en Python. ¿Para qué sirve?",
+                 "r": "Garantiza que solo exista una instancia de una clase",
+                 "p": ["Paso 1: Usar variable de clase _instance = None", "Paso 2: En __new__, verificar si _instance existe", "Paso 3: Si existe retornarla, si no crearla y guardarla"]},
+                {"e": "¿Qué diferencia hay entre una lista enlazada simple y una doble? ¿Cuándo usar cada una?",
+                 "r": "Simple: un puntero (siguiente). Doble: dos punteros (anterior y siguiente)",
+                 "p": ["Paso 1: Lista simple → solo apunta al siguiente nodo (menor memoria)", "Paso 2: Lista doble → apunta al anterior y siguiente (más flexible)", "Paso 3: Usar simple cuando sólo se recorre hacia adelante; doble cuando se necesita recorrido bidireccional"]},
             ]
         else:
             ejercicios = [
                 {"e": "Escribe una función en Python que reciba una lista y devuelva la lista ordenada usando Bubble Sort.",
                  "r": "Comparar pares adyacentes e intercambiar si están desordenados",
                  "p": ["Paso 1: Recorrer lista con dos ciclos anidados", "Paso 2: Comparar arr[j] > arr[j+1] → intercambiar", "Paso 3: Repetir hasta que no haya intercambios. Complejidad O(n²)"]},
-                {"e": "¿Qué patrón de diseño usarías para que solo exista una instancia de una clase? Implementa en Python.",
-                 "r": "Patrón Singleton",
-                 "p": ["Paso 1: Usar variable de clase _instance = None", "Paso 2: En __new__, verificar si _instance existe", "Paso 3: Si existe retornarla, si no crearla y guardarla"]},
+                {"e": "¿Qué es la herencia en POO? Da un ejemplo en Python.",
+                 "r": "Mecanismo para crear clases que heredan atributos y métodos de otra clase",
+                 "p": ["Paso 1: Definir clase base (padre): class Animal:", "Paso 2: Crear clase hija con (Animal): class Perro(Animal):", "Paso 3: La clase hija hereda todos los métodos del padre y puede agregarlos o sobrescribirlos"]},
+                {"e": "Escribe una función recursiva para calcular la suma de los primeros n números naturales.",
+                 "r": "def suma(n): return 0 if n==0 else n + suma(n-1)",
+                 "p": ["Paso 1: Caso base: suma(0) = 0", "Paso 2: Caso recursivo: suma(n) = n + suma(n-1)", "Paso 3: Ejemplo: suma(5) = 5+4+3+2+1+0 = 15"]},
             ]
         ej = random.choice(ejercicios)
         return self._manual_exercise("programacion", dif, ej["e"], ej["r"], ej["p"])

@@ -2,7 +2,8 @@ const pool = require("../config/db.cjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
 exports.getLogin = async (req, res) => {
   const { password, email } = req.body;
@@ -114,6 +115,7 @@ exports.forgotPassword = async (req, res) => {
     console.log("GMAIL_PASS cargada:", process.env.GMAIL_PASS ? "Sí" : "No");
 
     // Verificar usuario
+    let usuario = null;
     let result = await pool.query(
       "SELECT * FROM public.asesor WHERE email = $1",
       [email]
@@ -121,7 +123,7 @@ exports.forgotPassword = async (req, res) => {
 
     if (result.rowCount > 0) {
       usuario = result.rows[0];
-    }else{
+    } else {
       result = await pool.query(
         "SELECT * FROM public.estudiante WHERE email = $1",
         [email]
@@ -131,7 +133,7 @@ exports.forgotPassword = async (req, res) => {
       }
     }
 
-    if (result.rowCount === 0) {
+    if (!usuario) {
       console.log(
         "Usuario no encontrado, simulando respuesta sin enviar correo"
       );
@@ -149,32 +151,23 @@ exports.forgotPassword = async (req, res) => {
     }/ResetPassword/${token}`;
     console.log("Enlace generado:", link);
 
-    // Configurar transporte
+    // Configurar transporte — .trim() para evitar espacios en la contraseña
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
+        user: (process.env.GMAIL_USER || "").trim(),
+        pass: (process.env.GMAIL_PASS || "").trim(),
       },
     });
 
-    // 🔍 Probar conexión SMTP
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error("Error de conexión SMTP:", error);
-      } else {
-        console.log("Conexión SMTP exitosa, listo para enviar.");
-      }
-    });
-
     const mailOptions = {
-      from: `"Soporte Assura" <${process.env.GMAIL_USER}>`,
+      from: `"Soporte Assura" <${(process.env.GMAIL_USER || "").trim()}>`,
       to: email,
       subject: "Recuperación de contraseña - Assura",
       html: `
         <h2>Recuperación de contraseña</h2>
         <p>Hola ${
-          result.rows[0].nombres || "usuario"
+          usuario.nombres || "usuario"
         }, haz clic en el enlace:</p>
         <a href="${link}" target="_blank">${link}</a>
         <p>Este enlace expira en 15 minutos.</p>
@@ -182,16 +175,22 @@ exports.forgotPassword = async (req, res) => {
     };
 
     // Intentar enviar
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Correo enviado:", info.response);
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Correo enviado:", info.response);
+    } catch (smtpError) {
+      console.error("Error SMTP al enviar correo:", smtpError.message);
+      // No revelar al usuario si el envío falló (seguridad)
+    }
 
+    // Siempre responder OK para no revelar si el email existe
     res.json({
       ok: true,
-      mensaje: "Correo de recuperación enviado exitosamente",
+      mensaje: "Si el correo está registrado, recibirás un enlace de recuperación.",
     });
   } catch (error) {
     console.error("Error completo:", error);
-    res.status(500).json({ ok: false, mensaje: "Error al enviar el correo" });
+    res.status(500).json({ ok: false, mensaje: "Error al procesar la solicitud" });
   }
 };
 
@@ -230,8 +229,8 @@ exports.resetPassword = async (req, res) => {
     );
 
     // Verificar si el usuario es asesor o estudiante
-    if (usuario.rowCount === 0) {
-      console.log("Usuario no encontrado en tabla");
+    if (result.rowCount === 0) {
+      console.log("Usuario no encontrado en tabla asesor, intentando en estudiante");
 
       result = await pool.query(
         "UPDATE public.estudiante SET password = $1 WHERE email = $2 RETURNING *",

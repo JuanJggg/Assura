@@ -6,3 +6,5 @@ numpy
 pydantic
 sympy
 scipy
+google-generativeai
+python-dotenv

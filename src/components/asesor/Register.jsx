@@ -10,17 +10,6 @@ function Register() {
     const [currentPage, setCurrentPage] = useState('asesoria');
 
 
-    const renderContent = () => {
-        switch (currentPage) {
-            case 'materia':
-                return <MateriaRegistration/>;
-            case 'asesoria':
-                return <SubjectRegistration/>;
-            case 'chat':
-                return <Chatbot/>;
-        }
-    };
-
     return (
         <div className="flex flex-col h-screen overflow-hidden font-sans">
             {/* Encabezado */}
@@ -31,8 +20,8 @@ function Register() {
                 <Menu/>
 
                 {/* Contenido principal */}
-                <main className="flex-1 bg-gray-100 overflow-y-auto">
-                    <div className="p-8">
+                <main className="flex-1 bg-gray-100 overflow-hidden" style={{ display: "flex", flexDirection: "column" }}>
+                    <div className="p-8" style={{ flexShrink: 0 }}>
                         <div className="mb-6 flex justify-between items-center">
                             <div>
                                 <button
@@ -68,7 +57,17 @@ function Register() {
                             </div>
                         </div>
 
-                        {renderContent()}
+                        {/* Renderizar con display:none para NO desmontar el Chatbot */}
+                        <div style={{ display: currentPage === 'asesoria' ? 'block' : 'none' }}>
+                            <SubjectRegistration/>
+                        </div>
+                        <div style={{ display: currentPage === 'materia' ? 'block' : 'none' }}>
+                            <MateriaRegistration/>
+                        </div>
+                    </div>
+                    {/* Chatbot fuera del padding para que ocupe todo el espacio disponible */}
+                    <div style={{ display: currentPage === 'chat' ? 'flex' : 'none', flex: 1, overflow: 'hidden' }}>
+                        <Chatbot/>
                     </div>
                 </main>
             </div>

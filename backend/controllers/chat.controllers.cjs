@@ -171,10 +171,10 @@ exports.guardarMensaje = async (data) => {
 };
 
 exports.enviarMensaje = async (req, res) => {
-  const { chatId, content, senderId } = req.body;
+  const { chatId, content, senderId, senderType } = req.body;
 
   console.log("====== ENVIAR MENSAJE ======");
-  console.log("Datos recibidos:", { chatId, content, senderId });
+  console.log("Datos recibidos:", { chatId, content, senderId, senderType });
 
   if (!chatId || !content || !senderId) {
     return res.status(400).json({
@@ -197,21 +197,22 @@ exports.enviarMensaje = async (req, res) => {
     const { id_estudiante, id_asesor } = conversacion.rows[0];
     console.log("✓ Conversación encontrada:", { id_estudiante, id_asesor });
 
-    // Determinar si el remitente es estudiante o asesor
-    const esAsesor = senderId == id_asesor;
-    const senderType = esAsesor ? 'asesor' : 'estudiante';
-    console.log("✓ Tipo de remitente identificado:", senderType);
+    // Determinar tipo de remitente: usar senderType si viene, sino comparar con id_asesor
+    const esAsesor = senderType ? senderType === 'asesor' : (senderId == id_asesor);
+    const tipoRemitente = esAsesor ? 'asesor' : 'estudiante';
+    console.log("✓ Tipo de remitente identificado:", tipoRemitente);
 
     console.log("2. Guardando mensaje en BD...");
     const mensajeGuardado = await exports.guardarMensaje({
       chatId,
       content,
       senderId,
-      senderType
+      senderType: tipoRemitente
     });
     console.log("✓ Mensaje guardado:", mensajeGuardado);
 
-    const receptorId = senderId == id_estudiante ? id_asesor : id_estudiante;
+    // Usar esAsesor para determinar receptor (NO comparar IDs que pueden colisionar entre tablas)
+    const receptorId = esAsesor ? id_estudiante : id_asesor;
     const receptorTipo = esAsesor ? 'estudiante' : 'asesor';
     console.log("✓ Receptor identificado:", receptorId, "tipo:", receptorTipo);
 
@@ -231,7 +232,7 @@ exports.enviarMensaje = async (req, res) => {
       id_conversacion: chatId,
       contenido: content,
       remitente_id: senderId,
-      remitente_tipo: senderType,
+      remitente_tipo: tipoRemitente,
       fecha_envio: mensajeGuardado.fecha_envio,
     };
     console.log("   Datos:", JSON.stringify(datosEvento, null, 2));
