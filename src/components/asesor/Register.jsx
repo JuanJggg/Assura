@@ -5,6 +5,7 @@ import Header from "./../header";
 import SubjectRegistration from "./SubjectRegistration";
 import MateriaRegistration from "./MateriaRegistration";
 import Chatbot from "./Chatbot";
+import PruebasManager from "./PruebasManager";
 
 function Register() {
     const [currentPage, setCurrentPage] = useState('asesoria');
@@ -53,6 +54,15 @@ function Register() {
                                     }`}>
                                     Chats
                                 </button>
+                                <button
+                                    onClick={() => setCurrentPage('pruebas')}
+                                    className={`mr-4 py-2 px-4 rounded-md transition-colors duration-200 ${
+                                        currentPage === 'pruebas'
+                                            ? 'bg-red-600 text-white font-semibold'
+                                            : 'text-gray-600 hover:bg-indigo-100'
+                                    }`}>
+                                    Pruebas
+                                </button>
 
                             </div>
                         </div>
@@ -63,6 +73,9 @@ function Register() {
                         </div>
                         <div style={{ display: currentPage === 'materia' ? 'block' : 'none' }}>
                             <MateriaRegistration/>
+                        </div>
+                        <div style={{ display: currentPage === 'pruebas' ? 'block' : 'none' }}>
+                            <PruebasManager/>
                         </div>
                     </div>
                     {/* Chatbot fuera del padding para que ocupe todo el espacio disponible */}

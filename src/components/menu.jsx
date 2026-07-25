@@ -36,6 +36,13 @@ const BotIcon = () => (
     <circle cx="12" cy="6.5" r="1.8" stroke="currentColor" strokeWidth="1.5"/>
   </svg>
 );
+const TestIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M9 14l2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 function Menu() {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
@@ -53,6 +60,7 @@ function Menu() {
         { label: "Inicio",            href: "/Dashboard",        icon: <HomeIcon /> },
         { label: "Foro de comunidad", href: "/Forum",            icon: <ForumIcon /> },
         { label: "Chats",             href: "/Chatstudy",        icon: <ChatIcon /> },
+        { label: "Mis Pruebas",       href: "/MisPruebas",       icon: <TestIcon /> },
         { label: "Chatbot IA",        href: "/ChatbotEstudiante",icon: <BotIcon /> },
       ];
 

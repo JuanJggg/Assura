@@ -34,6 +34,9 @@ app.use("/chat", chatRoutes);
 const chatbotRoutes = require("./routes/chatbot.routes.cjs");
 app.use("/chatbot", chatbotRoutes);
 
+const pruebasRoutes = require("./routes/pruebas.routes.cjs");
+app.use("/pruebas", pruebasRoutes);
+
 app.get("/", (req, res) => {
   res.json({
     message: "API de Assura funcionando correctamente",
