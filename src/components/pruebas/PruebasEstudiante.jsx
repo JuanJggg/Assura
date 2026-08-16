@@ -3,6 +3,7 @@ import axios from 'axios';
 import Menu from '../menu';
 import Header from '../header';
 import Toast from '../util/alert.jsx';
+import EvaluacionPostPrueba from './EvaluacionPostPrueba.jsx';
 
 function PruebasEstudiante() {
     const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
@@ -14,6 +15,8 @@ function PruebasEstudiante() {
     const [toast, setToast] = useState(null);
     const [loading, setLoading] = useState(false);
     const [enviando, setEnviando] = useState(false);
+    const [showEvaluacion, setShowEvaluacion] = useState(false);
+    const [evaluacionesRealizadas, setEvaluacionesRealizadas] = useState({});
 
     useEffect(() => {
         getAsignaciones();
@@ -83,6 +86,10 @@ function PruebasEstudiante() {
                 setResultado(res.data.resultado);
                 setToast({ type: 'success', message: 'Prueba completada exitosamente' });
                 getAsignaciones();
+                // Si es prueba POST, mostrar evaluación automáticamente
+                if (pruebaActiva.tipo === 'POST') {
+                    setTimeout(() => setShowEvaluacion(true), 2000);
+                }
             } else {
                 setToast({ type: 'error', message: res.data.mensaje });
             }
@@ -93,6 +100,31 @@ function PruebasEstudiante() {
             setEnviando(false);
         }
     };
+
+    const verificarEvaluacion = async (asignacionId) => {
+        try {
+            const res = await axios.post("http://localhost:3001/pruebas/verificarEvaluacionPendiente", {
+                asignacion_id: asignacionId,
+                tipo: 'asesor'
+            });
+            if (res.data.ok) {
+                setEvaluacionesRealizadas(prev => ({ ...prev, [asignacionId]: res.data.yaEvaluado }));
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // Verificar evaluaciones para asignaciones POST completadas
+    useEffect(() => {
+        asignaciones
+            .filter(a => a.tipo === 'POST' && a.estado === 'COMPLETADA')
+            .forEach(a => {
+                if (evaluacionesRealizadas[a.id] === undefined) {
+                    verificarEvaluacion(a.id);
+                }
+            });
+    }, [asignaciones]);
 
     const volverALista = () => {
         setPruebaActiva(null);
@@ -154,26 +186,43 @@ function PruebasEstudiante() {
 
                         {/* Resultado */}
                         {resultado && (
-                            <div className={`rounded-xl shadow-lg p-8 mb-6 text-center ${
-                                resultado.puntaje >= 80 ? 'bg-green-50 border-2 border-green-200' :
-                                resultado.puntaje >= 60 ? 'bg-yellow-50 border-2 border-yellow-200' :
-                                'bg-red-50 border-2 border-red-200'
-                            }`}>
-                                <div className="text-6xl mb-4">
-                                    {resultado.puntaje >= 80 ? '🎉' : resultado.puntaje >= 60 ? '👍' : '💪'}
-                                </div>
-                                <h3 className="text-2xl font-bold text-gray-800 mb-2">¡Prueba Completada!</h3>
-                                <div className={`text-5xl font-black mb-2 ${
-                                    resultado.puntaje >= 80 ? 'text-green-600' :
-                                    resultado.puntaje >= 60 ? 'text-yellow-600' :
-                                    'text-red-600'
+                            <>
+                                <div className={`rounded-xl shadow-lg p-8 mb-6 text-center ${
+                                    resultado.puntaje >= 80 ? 'bg-green-50 border-2 border-green-200' :
+                                    resultado.puntaje >= 60 ? 'bg-yellow-50 border-2 border-yellow-200' :
+                                    'bg-red-50 border-2 border-red-200'
                                 }`}>
-                                    {resultado.puntaje}%
+                                    <div className="text-6xl mb-4">
+                                        {resultado.puntaje >= 80 ? '🎉' : resultado.puntaje >= 60 ? '👍' : '💪'}
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-2">¡Prueba Completada!</h3>
+                                    <div className={`text-5xl font-black mb-2 ${
+                                        resultado.puntaje >= 80 ? 'text-green-600' :
+                                        resultado.puntaje >= 60 ? 'text-yellow-600' :
+                                        'text-red-600'
+                                    }`}>
+                                        {resultado.puntaje}%
+                                    </div>
+                                    <p className="text-gray-600">
+                                        {resultado.correctas} de {resultado.total} respuestas correctas
+                                    </p>
                                 </div>
-                                <p className="text-gray-600">
-                                    {resultado.correctas} de {resultado.total} respuestas correctas
-                                </p>
-                            </div>
+
+                                {/* Evaluación post-prueba (solo para POST) */}
+                                {showEvaluacion && pruebaActiva.tipo === 'POST' && (
+                                    <div className="mb-6">
+                                        <EvaluacionPostPrueba
+                                            asignacion={pruebaActiva}
+                                            onClose={() => setShowEvaluacion(false)}
+                                            onSubmitSuccess={() => {
+                                                setShowEvaluacion(false);
+                                                setToast({ type: 'success', message: '¡Gracias por tu evaluación!' });
+                                                setEvaluacionesRealizadas(prev => ({ ...prev, [pruebaActiva.id]: true }));
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
 
                         {/* Preguntas */}
@@ -352,17 +401,41 @@ function PruebasEstudiante() {
                                         </div>
                                         <div className="ml-4 flex items-center gap-3">
                                             {asig.estado === 'COMPLETADA' ? (
-                                                <div className="text-center">
-                                                    <p className={`text-2xl font-black ${
-                                                        Number(asig.puntaje) >= 80 ? 'text-green-600' :
-                                                        Number(asig.puntaje) >= 60 ? 'text-yellow-600' :
-                                                        'text-red-600'
-                                                    }`}>
-                                                        {Number(asig.puntaje).toFixed(0)}%
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">
-                                                        {asig.respuestas_correctas}/{asig.total_preguntas}
-                                                    </p>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="text-center">
+                                                        <p className={`text-2xl font-black ${
+                                                            Number(asig.puntaje) >= 80 ? 'text-green-600' :
+                                                            Number(asig.puntaje) >= 60 ? 'text-yellow-600' :
+                                                            'text-red-600'
+                                                        }`}>
+                                                            {Number(asig.puntaje).toFixed(0)}%
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {asig.respuestas_correctas}/{asig.total_preguntas}
+                                                        </p>
+                                                    </div>
+                                                    {/* Botón evaluar para POST completadas sin evaluación */}
+                                                    {asig.tipo === 'POST' && evaluacionesRealizadas[asig.id] === false && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setPruebaActiva(asig);
+                                                                setResultado({ puntaje: Number(asig.puntaje), correctas: asig.respuestas_correctas, total: asig.total_preguntas });
+                                                                setShowEvaluacion(true);
+                                                            }}
+                                                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg text-xs shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1"
+                                                        >
+                                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="#F59E0B" stroke="#D97706" strokeWidth="1">
+                                                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                                            </svg>
+                                                            Evaluar
+                                                        </button>
+                                                    )}
+                                                    {asig.tipo === 'POST' && evaluacionesRealizadas[asig.id] === true && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                                            ✓ Evaluado
+                                                        </span>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <button

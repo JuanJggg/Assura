@@ -172,6 +172,7 @@ exports.getPruebasEstudiante = async (req, res) => {
         const result = await pool.query(
             `SELECT pa.id, pa.tipo, pa.estado, pa.puntaje, pa.total_preguntas,
                     pa.respuestas_correctas, pa.fecha_asignacion, pa.fecha_completada,
+                    pa.asesor_id,
                     p.titulo, p.descripcion,
                     m.nombre AS materia,
                     a.nombres || ' ' || a.apellidos AS asesor
@@ -332,7 +333,8 @@ exports.getEstadisticasAsesor = async (req, res) => {
                 MAX(CASE WHEN pa.tipo = 'PRE' THEN pa.estado END) AS estado_pre,
                 MAX(CASE WHEN pa.tipo = 'POST' THEN pa.estado END) AS estado_post,
                 MAX(CASE WHEN pa.tipo = 'POST' THEN pa.puntaje END) - 
-                MAX(CASE WHEN pa.tipo = 'PRE' THEN pa.puntaje END) AS mejora
+                MAX(CASE WHEN pa.tipo = 'PRE' THEN pa.puntaje END) AS mejora,
+                MAX(CASE WHEN pa.tipo = 'POST' AND pa.estado = 'COMPLETADA' THEN pa.id END) AS post_asignacion_id
              FROM public.prueba_asignacion pa
              INNER JOIN public.prueba p ON pa.prueba_id = p.id
              INNER JOIN public.estudiante e ON pa.estudiante_id = e.id
@@ -385,5 +387,168 @@ exports.getDetalleRespuestas = async (req, res) => {
     } catch (error) {
         console.error("Error al obtener detalle:", error);
         res.status(500).json({ ok: false, mensaje: "Error al obtener detalle" });
+    }
+};
+
+// =============================================
+// EVALUACIONES POST-PRUEBA Y RANKING
+// =============================================
+
+// Estudiante evalúa al asesor (después de prueba POST)
+exports.evaluarAsesor = async (req, res) => {
+    const { asignacion_id, estudiante_id, asesor_id, estrellas, comentario } = req.body;
+    try {
+        // Verificar que la asignación sea POST y esté completada
+        const asig = await pool.query(
+            `SELECT id, tipo, estado FROM public.prueba_asignacion WHERE id = $1`,
+            [asignacion_id]
+        );
+        if (asig.rowCount === 0) {
+            return res.json({ success: false, mensaje: "Asignación no encontrada" });
+        }
+        if (asig.rows[0].tipo !== 'POST') {
+            return res.json({ success: false, mensaje: "Solo se puede evaluar después de la prueba final (POST)" });
+        }
+        if (asig.rows[0].estado !== 'COMPLETADA') {
+            return res.json({ success: false, mensaje: "La prueba debe estar completada para evaluar" });
+        }
+
+        // Verificar que no exista ya una evaluación
+        const existe = await pool.query(
+            `SELECT id FROM public.evaluacion_asesor WHERE asignacion_id = $1`,
+            [asignacion_id]
+        );
+        if (existe.rowCount > 0) {
+            return res.json({ success: false, mensaje: "Ya evaluaste a este asesor para esta prueba" });
+        }
+
+        await pool.query(
+            `INSERT INTO public.evaluacion_asesor (asignacion_id, estudiante_id, asesor_id, estrellas, comentario)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [asignacion_id, estudiante_id, asesor_id, estrellas, comentario || null]
+        );
+
+        res.json({ success: true, mensaje: "¡Evaluación enviada exitosamente!" });
+    } catch (error) {
+        console.error("Error al evaluar asesor:", error);
+        res.status(500).json({ success: false, mensaje: "Error al enviar la evaluación" });
+    }
+};
+
+// Asesor evalúa al estudiante (diligencia)
+exports.evaluarEstudiante = async (req, res) => {
+    const { asignacion_id, asesor_id, estudiante_id, estrellas, comentario } = req.body;
+    try {
+        // Verificar que la asignación sea POST y esté completada
+        const asig = await pool.query(
+            `SELECT id, tipo, estado FROM public.prueba_asignacion WHERE id = $1`,
+            [asignacion_id]
+        );
+        if (asig.rowCount === 0) {
+            return res.json({ success: false, mensaje: "Asignación no encontrada" });
+        }
+        if (asig.rows[0].tipo !== 'POST') {
+            return res.json({ success: false, mensaje: "Solo se puede evaluar después de la prueba final (POST)" });
+        }
+        if (asig.rows[0].estado !== 'COMPLETADA') {
+            return res.json({ success: false, mensaje: "La prueba debe estar completada para evaluar" });
+        }
+
+        // Verificar que no exista ya una evaluación
+        const existe = await pool.query(
+            `SELECT id FROM public.evaluacion_estudiante WHERE asignacion_id = $1`,
+            [asignacion_id]
+        );
+        if (existe.rowCount > 0) {
+            return res.json({ success: false, mensaje: "Ya evaluaste a este estudiante para esta prueba" });
+        }
+
+        await pool.query(
+            `INSERT INTO public.evaluacion_estudiante (asignacion_id, asesor_id, estudiante_id, estrellas, comentario)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [asignacion_id, asesor_id, estudiante_id, estrellas, comentario || null]
+        );
+
+        res.json({ success: true, mensaje: "¡Evaluación del estudiante enviada exitosamente!" });
+    } catch (error) {
+        console.error("Error al evaluar estudiante:", error);
+        res.status(500).json({ success: false, mensaje: "Error al enviar la evaluación" });
+    }
+};
+
+// Ranking de asesores (público)
+exports.getRankingAsesores = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT 
+                a.id AS asesor_id,
+                a.nombres || ' ' || a.apellidos AS nombre,
+                a.email,
+                a.telefono,
+                STRING_AGG(DISTINCT m.nombre, ', ') AS materias,
+                COALESCE(ROUND(AVG(ea.estrellas)::numeric, 2), 0) AS promedio_estrellas,
+                COUNT(ea.id) AS total_evaluaciones,
+                MAX(ea.fecha_evaluacion) AS ultima_evaluacion
+             FROM public.asesor a
+             LEFT JOIN public.asesor_materia am ON a.id = am.asesor_id
+             LEFT JOIN public.materia m ON am.materia_id = m.id
+             LEFT JOIN public.evaluacion_asesor ea ON a.id = ea.asesor_id
+             GROUP BY a.id, a.nombres, a.apellidos, a.email, a.telefono
+             HAVING COUNT(ea.id) > 0
+             ORDER BY promedio_estrellas DESC, total_evaluaciones DESC`
+        );
+        res.json({ ok: true, ranking: result.rows });
+    } catch (error) {
+        console.error("Error al obtener ranking:", error);
+        res.status(500).json({ ok: false, mensaje: "Error al obtener el ranking" });
+    }
+};
+
+// Evaluaciones/comentarios de un asesor específico
+exports.getEvaluacionesAsesor = async (req, res) => {
+    const { asesor_id } = req.body;
+    try {
+        const result = await pool.query(
+            `SELECT 
+                ea.id,
+                ea.estrellas,
+                ea.comentario,
+                ea.fecha_evaluacion,
+                e.nombres || ' ' || e.apellidos AS estudiante,
+                p.titulo AS prueba_titulo,
+                m.nombre AS materia
+             FROM public.evaluacion_asesor ea
+             INNER JOIN public.estudiante e ON ea.estudiante_id = e.id
+             INNER JOIN public.prueba_asignacion pa ON ea.asignacion_id = pa.id
+             INNER JOIN public.prueba p ON pa.prueba_id = p.id
+             INNER JOIN public.materia m ON p.materia_id = m.id
+             WHERE ea.asesor_id = $1
+             ORDER BY ea.fecha_evaluacion DESC`,
+            [asesor_id]
+        );
+        res.json({ ok: true, evaluaciones: result.rows });
+    } catch (error) {
+        console.error("Error al obtener evaluaciones:", error);
+        res.status(500).json({ ok: false, mensaje: "Error al obtener evaluaciones" });
+    }
+};
+
+// Verificar si hay evaluación pendiente para una asignación POST
+exports.verificarEvaluacionPendiente = async (req, res) => {
+    const { asignacion_id, tipo } = req.body;
+    // tipo = 'asesor' (el estudiante evalúa al asesor) o 'estudiante' (el asesor evalúa al estudiante)
+    try {
+        const tabla = tipo === 'estudiante' ? 'evaluacion_estudiante' : 'evaluacion_asesor';
+        const result = await pool.query(
+            `SELECT id FROM public.${tabla} WHERE asignacion_id = $1`,
+            [asignacion_id]
+        );
+        res.json({ 
+            ok: true, 
+            yaEvaluado: result.rowCount > 0 
+        });
+    } catch (error) {
+        console.error("Error al verificar evaluación:", error);
+        res.status(500).json({ ok: false, mensaje: "Error al verificar evaluación" });
     }
 };

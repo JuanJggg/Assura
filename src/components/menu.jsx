@@ -43,6 +43,11 @@ const TestIcon = () => (
     <path d="M9 14l2 2 4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
+const RankingIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
 
 function Menu() {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
@@ -55,6 +60,7 @@ function Menu() {
         { label: "Asesorías",         href: "/Asesor",          icon: <AdvisorIcon /> },
         { label: "Foro de comunidad", href: "/Forum",           icon: <ForumIcon /> },
         { label: "Chatbot IA",        href: "/ChatbotAsesor",   icon: <BotIcon /> },
+        { label: "Ranking Asesores", href: "/RankingAsesores",  icon: <RankingIcon /> },
       ]
     : [
         { label: "Inicio",            href: "/Dashboard",        icon: <HomeIcon /> },
@@ -62,6 +68,7 @@ function Menu() {
         { label: "Chats",             href: "/Chatstudy",        icon: <ChatIcon /> },
         { label: "Mis Pruebas",       href: "/MisPruebas",       icon: <TestIcon /> },
         { label: "Chatbot IA",        href: "/ChatbotEstudiante",icon: <BotIcon /> },
+        { label: "Ranking Asesores", href: "/RankingAsesores",  icon: <RankingIcon /> },
       ];
 
   return (

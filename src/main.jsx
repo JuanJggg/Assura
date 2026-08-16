@@ -13,6 +13,7 @@ import ResetPassword from './components/Resetpassword.jsx';
 import ChatbotEstudiante from './components/chatbot/ChatbotEstudiante.jsx';
 import ChatbotAsesor from './components/chatbot/ChatbotAsesor.jsx';
 import PruebasEstudiante from './components/pruebas/PruebasEstudiante.jsx';
+import RankingAsesores from './components/ranking/RankingAsesores.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')).render(
         <Route path="/ChatbotEstudiante" element={<ChatbotEstudiante />} />
         <Route path="/ChatbotAsesor" element={<ChatbotAsesor />} />
         <Route path="/MisPruebas" element={<PruebasEstudiante />} />
+        <Route path="/RankingAsesores" element={<RankingAsesores />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
