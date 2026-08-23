@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../services/api";
 import Toast from '../util/alert.jsx';
 import PruebaForm from './PruebaForm.jsx';
 import PruebaEstadisticas from './PruebaEstadisticas.jsx';
@@ -26,7 +26,7 @@ function PruebasManager() {
 
     const getPruebas = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getPruebasAsesor", {
+            const res = await API.post("/pruebas/getPruebasAsesor", {
                 asesor_id: usuario.id
             });
             if (res.data.ok) setPruebas(res.data.pruebas);
@@ -37,7 +37,7 @@ function PruebasManager() {
 
     const getMaterias = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/asesoria/getMaterias");
+            const res = await API.post("/asesoria/getMaterias");
             setMaterias(res.data);
         } catch (err) {
             console.error(err);
@@ -46,7 +46,7 @@ function PruebasManager() {
 
     const getEstudiantes = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getEstudiantesAsesor", {
+            const res = await API.post("/pruebas/getEstudiantesAsesor", {
                 asesor_id: usuario.id
             });
             if (res.data.ok) setEstudiantes(res.data.estudiantes);
@@ -57,7 +57,7 @@ function PruebasManager() {
 
     const handleCrearPrueba = async (datosPrueba) => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/crearPrueba", {
+            const res = await API.post("/pruebas/crearPrueba", {
                 ...datosPrueba,
                 asesor_id: usuario.id
             });
@@ -78,7 +78,7 @@ function PruebasManager() {
     const handleEliminar = async (pruebaId) => {
         if (!window.confirm('¿Estás seguro de eliminar esta prueba?')) return;
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/eliminarPrueba", {
+            const res = await API.post("/pruebas/eliminarPrueba", {
                 prueba_id: pruebaId
             });
             setToast({
@@ -94,7 +94,7 @@ function PruebasManager() {
     const handleToggleActiva = async (pruebaId, activa) => {
         try {
             const nuevoEstado = activa === 'S' ? 'N' : 'S';
-            const res = await axios.post("http://localhost:3001/pruebas/toggleActiva", {
+            const res = await API.post("/pruebas/toggleActiva", {
                 prueba_id: pruebaId,
                 activa: nuevoEstado
             });
@@ -111,7 +111,7 @@ function PruebasManager() {
     const handleAsignar = async () => {
         if (!asignarEstudiante || !showAsignar) return;
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/asignarPrueba", {
+            const res = await API.post("/pruebas/asignarPrueba", {
                 prueba_id: showAsignar,
                 estudiante_id: parseInt(asignarEstudiante),
                 asesor_id: usuario.id,
@@ -134,7 +134,7 @@ function PruebasManager() {
 
     const handleVerPreguntas = async (prueba) => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getPreguntasPrueba", {
+            const res = await API.post("/pruebas/getPreguntasPrueba", {
                 prueba_id: prueba.id
             });
             if (res.data.ok) {

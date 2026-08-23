@@ -49,12 +49,37 @@ const RankingIcon = () => (
   </svg>
 );
 
+const AdminStatsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const AdminUsersIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+  </svg>
+);
+const AdminForumIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const AdminChatIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="17" height="17">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8"/>
+  </svg>
+);
+
 function Menu() {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
   const navigate = useNavigate();
   const location = useLocation();
 
-  const menuItems = usuario.rol === "Asesor"
+  const menuItems = usuario.rol === "Admin"
+    ? [
+        { label: "Panel Admin",         href: "/Admin",           icon: <AdminStatsIcon /> },
+      ]
+    : usuario.rol === "Asesor"
     ? [
         { label: "Inicio",            href: "/Dashboard",       icon: <HomeIcon /> },
         { label: "Asesorías",         href: "/Asesor",          icon: <AdvisorIcon /> },

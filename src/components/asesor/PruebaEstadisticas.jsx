@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../services/api";
 
 function PruebaEstadisticas({ asesorId }) {
     const [estadisticas, setEstadisticas] = useState([]);
@@ -19,7 +19,7 @@ function PruebaEstadisticas({ asesorId }) {
 
     const getEstadisticas = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getEstadisticasAsesor", {
+            const res = await API.post("/pruebas/getEstadisticasAsesor", {
                 asesor_id: asesorId
             });
             if (res.data.ok) {
@@ -40,7 +40,7 @@ function PruebaEstadisticas({ asesorId }) {
 
     const verificarEval = async (asignacionId) => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/verificarEvaluacionPendiente", {
+            const res = await API.post("/pruebas/verificarEvaluacionPendiente", {
                 asignacion_id: asignacionId,
                 tipo: 'estudiante'
             });
@@ -56,7 +56,7 @@ function PruebaEstadisticas({ asesorId }) {
         if (!evalModal || evalEstrellas === 0) return;
         setEvalEnviando(true);
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/evaluarEstudiante", {
+            const res = await API.post("/pruebas/evaluarEstudiante", {
                 asignacion_id: evalModal.asignacion_id,
                 asesor_id: asesorId,
                 estudiante_id: evalModal.estudiante_id,

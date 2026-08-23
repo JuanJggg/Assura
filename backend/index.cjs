@@ -7,7 +7,10 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
 app.use(express.json());
 
 // Middleware de logging
@@ -36,6 +39,9 @@ app.use("/chatbot", chatbotRoutes);
 
 const pruebasRoutes = require("./routes/pruebas.routes.cjs");
 app.use("/pruebas", pruebasRoutes);
+
+const adminRoutes = require("./routes/admin.routes.cjs");
+app.use("/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.json({

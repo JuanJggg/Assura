@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import API from "../../services/api";
 import pusher from "../../services/pusher";
 
 // ─── SVG Icons ───────────────────────────────────────────────
@@ -106,7 +106,7 @@ function Chatbot() {
 
   const cargarConversaciones = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/chat/getConversacion/asesor/${userId}`);
+      const res = await API.get(`/chat/getConversacion/asesor/${userId}`);
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
           id: Number(conv.id),  // Normalizar a Number
@@ -133,7 +133,7 @@ function Chatbot() {
 
   const cargarMensajes = async (chatId) => {
     try {
-      const res = await axios.get(`http://localhost:3001/chat/getMensajes/${chatId}`);
+      const res = await API.get(`/chat/getMensajes/${chatId}`);
       if (res.data.ok) setMessages(res.data.mensajes || []);
     } catch {}
   };
@@ -164,7 +164,7 @@ function Chatbot() {
     setMessage("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     try {
-      await axios.post("http://localhost:3001/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "asesor" });
+      await API.post("/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "asesor" });
       setChats(prev => prev.map(c => c.id === selectedChatId
         ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
         : c

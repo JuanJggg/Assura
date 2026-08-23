@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import SubjectForm from './SubjectForm';
 import SubjectList from './SubjectList';
-import axios from "axios";
+import API from "../../services/api";
 import '../../App.css';
 import Toast from '../util/alert.jsx';
 
@@ -17,11 +17,11 @@ function SubjectRegistration() {
     const handleAddSubject = async (newSubject) => {
 
         try {
-            let url = "http://localhost:3001/asesoria/addAsesoria";
+            let url = "/asesoria/addAsesoria";
             if (editingSubject) {
-                url = "http://localhost:3001/asesoria/updAsesoria";
+                url = "/asesoria/updAsesoria";
             }
-            const res = await axios.post(url, {
+            const res = await API.post(url, {
                 ...newSubject,
                 idUsuario: usuario.id
             });
@@ -49,8 +49,8 @@ function SubjectRegistration() {
     const handleDeleteSubject = async (id) => {
         console.log(id)
         try {
-            const res = await axios.post(
-                "http://localhost:3001/asesoria/delAsesoria", {
+            const res = await API.post(
+                "/asesoria/delAsesoria", {
                     id: id,
                 });
             console.log("respuesta", res.data);
@@ -68,8 +68,8 @@ function SubjectRegistration() {
 
     const handleToggleActive = async (id, activo) => {
         try {
-            const res = await axios.post(
-                "http://localhost:3001/asesoria/updActivo", {
+            const res = await API.post(
+                "/asesoria/updActivo", {
                     id: id, activo: activo === 'S' ? 'N' : 'S'
                 });
             console.log("respuesta", res.data);
@@ -92,8 +92,8 @@ function SubjectRegistration() {
 
     const getMaterias = async () => {
         try {
-            const res = await axios.post(
-                "http://localhost:3001/asesoria/getMaterias");
+            const res = await API.post(
+                "/asesoria/getMaterias");
             console.log("respuesta", res.data);
             setCategories(res.data);
         } catch (err) {
@@ -104,8 +104,8 @@ function SubjectRegistration() {
 
     const getAsesoria = async () => {
         try {
-            const res = await axios.post(
-                "http://localhost:3001/asesoria/getAsesoria");
+            const res = await API.post(
+                "/asesoria/getAsesoria");
             console.log("respuesta", res.data);
             setSubjects(res.data)
         } catch (err) {

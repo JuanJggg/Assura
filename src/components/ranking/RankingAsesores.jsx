@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../services/api";
 import Menu from '../menu';
 import Header from '../header';
 
@@ -60,7 +60,7 @@ function RankingAsesores() {
 
     const getRanking = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getRankingAsesores");
+            const res = await API.post("/pruebas/getRankingAsesores");
             if (res.data.ok) setRanking(res.data.ranking);
         } catch (err) {
             console.error(err);
@@ -78,7 +78,7 @@ function RankingAsesores() {
         setSelectedAsesor(asesor);
         setLoadingEval(true);
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getEvaluacionesAsesor", {
+            const res = await API.post("/pruebas/getEvaluacionesAsesor", {
                 asesor_id: asesor.asesor_id
             });
             if (res.data.ok) setEvaluaciones(res.data.evaluaciones);

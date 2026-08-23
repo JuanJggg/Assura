@@ -15,9 +15,15 @@ exports.getLogin = async (req, res) => {
       `
         SELECT *
         FROM (
-          SELECT email, password, id, 'Asesor' rol, nombres, apellidos FROM public.asesor
+          SELECT email, password, id, 'Asesor' rol, nombres, apellidos, 
+                 COALESCE(bloqueado, FALSE) AS bloqueado,
+                 COALESCE(es_admin, FALSE) AS es_admin
+          FROM public.asesor
           UNION
-          SELECT email, password, id, 'Estudiante' rol, nombres, apellidos FROM public.estudiante
+          SELECT email, password, id, 'Estudiante' rol, nombres, apellidos,
+                 COALESCE(bloqueado, FALSE) AS bloqueado,
+                 FALSE AS es_admin
+          FROM public.estudiante
         ) AS usuarios
         WHERE email = $1
       `,
@@ -34,6 +40,12 @@ exports.getLogin = async (req, res) => {
     const usuario = result.rows[0];
     console.log("Usuario encontrado", usuario);
 
+    // Verificar si el usuario está bloqueado
+    if (usuario.bloqueado) {
+      console.log("Usuario bloqueado:", usuario.email);
+      return res.status(403).json({ ok: false, mensaje: "Tu cuenta ha sido bloqueada. Contacta al administrador." });
+    }
+
     // Verificar si el usuario tiene contraseña
     const match = await bcrypt.compare(password, usuario.password);
     console.log("Contraseña compartida", match);
@@ -42,7 +54,10 @@ exports.getLogin = async (req, res) => {
        return res.status(401).json({ ok: false, mensaje: "Contraseña incorrecta" });
     }
 
-    console.log("Login exitoso para usuario:", usuario.email);
+    // Determinar rol (Admin si es_admin es true)
+    const rolFinal = usuario.es_admin ? "Admin" : usuario.rol;
+
+    console.log("Login exitoso para usuario:", usuario.email, "Rol:", rolFinal);
 
     res.json({
       ok: true,
@@ -51,7 +66,7 @@ exports.getLogin = async (req, res) => {
         id: usuario.id,
         nombres: usuario.nombres,
         apellidos: usuario.apellidos,
-        rol: usuario.rol,
+        rol: rolFinal,
         email: usuario.email,
       },
     });

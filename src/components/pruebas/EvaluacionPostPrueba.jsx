@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API from "../../services/api";
 
 function EvaluacionPostPrueba({ asignacion, onClose, onSubmitSuccess }) {
     const [estrellas, setEstrellas] = useState(0);
@@ -27,7 +28,7 @@ function EvaluacionPostPrueba({ asignacion, onClose, onSubmitSuccess }) {
         setEnviando(true);
         try {
             const axios = (await import('axios')).default;
-            const res = await axios.post("http://localhost:3001/pruebas/evaluarAsesor", {
+            const res = await API.post("/pruebas/evaluarAsesor", {
                 asignacion_id: asignacion.id,
                 estudiante_id: usuario.id,
                 asesor_id: asignacion.asesor_id,

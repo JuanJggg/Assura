@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../services/api";
 
 const EyeIcon = ({ open }) => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -105,7 +105,7 @@ function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3001/usuarios/addUser", formData);
+      const res = await API.post("/usuarios/addUser", formData);
       alert(res.data.mensaje);
       if (res.data.ok) goTo("/");
     } catch {

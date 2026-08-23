@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from "../../services/api";
 import Menu from '../menu';
 import Header from '../header';
 import Toast from '../util/alert.jsx';
@@ -24,7 +24,7 @@ function PruebasEstudiante() {
 
     const getAsignaciones = async () => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getPruebasEstudiante", {
+            const res = await API.post("/pruebas/getPruebasEstudiante", {
                 estudiante_id: usuario.id
             });
             if (res.data.ok) setAsignaciones(res.data.asignaciones);
@@ -36,7 +36,7 @@ function PruebasEstudiante() {
     const iniciarPrueba = async (asignacion) => {
         setLoading(true);
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/getPreguntasAsignacion", {
+            const res = await API.post("/pruebas/getPreguntasAsignacion", {
                 asignacion_id: asignacion.id
             });
             if (res.data.ok) {
@@ -77,7 +77,7 @@ function PruebasEstudiante() {
                 respuesta_estudiante: respuestas[p.id]
             }));
 
-            const res = await axios.post("http://localhost:3001/pruebas/enviarRespuestas", {
+            const res = await API.post("/pruebas/enviarRespuestas", {
                 asignacion_id: pruebaActiva.id,
                 respuestas: respuestasArray
             });
@@ -103,7 +103,7 @@ function PruebasEstudiante() {
 
     const verificarEvaluacion = async (asignacionId) => {
         try {
-            const res = await axios.post("http://localhost:3001/pruebas/verificarEvaluacionPendiente", {
+            const res = await API.post("/pruebas/verificarEvaluacionPendiente", {
                 asignacion_id: asignacionId,
                 tipo: 'asesor'
             });

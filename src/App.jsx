@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import Menu from "./components/menu";
 import Header from "./components/header";
-import axios from "axios";
+import API from "./services/api";
 import { useNavigate } from "react-router-dom";
 
 // ─── Avatar helper ────────────────────────────────────────────
@@ -32,14 +32,14 @@ function App() {
 
   const getAsesores = async () => {
     try {
-      const res = await axios.post("http://localhost:3001/dasboard/getAsesores");
+      const res = await API.post("/dasboard/getAsesores");
       setAsesores(res.data);
     } catch {}
   };
 
   const getComentarios = async () => {
     try {
-      const res = await axios.post("http://localhost:3001/dasboard/getComentario");
+      const res = await API.post("/dasboard/getComentario");
       setComentario(res.data);
     } catch {}
   };
@@ -50,7 +50,7 @@ function App() {
     if (!usuario?.id) { alert("Debes iniciar sesión primero"); navigate("/"); return; }
     setLoadingAsesor(asesorId);
     try {
-      const res = await axios.post("http://localhost:3001/chat/crearConversacion", { id_estudiante: usuario.id, id_asesor: asesorId });
+      const res = await API.post("/chat/crearConversacion", { id_estudiante: usuario.id, id_asesor: asesorId });
       if (res.data.ok) navigate("/Chatstudy", { state: { chatId: res.data.conversacion.id } });
       else alert("No se pudo crear la conversación");
     } catch (err) {

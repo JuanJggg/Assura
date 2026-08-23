@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Menu from "./../menu";
 import Header from "./../header";
-import axios from "axios";
+import API from "../../services/api";
 import pusher from "../../services/pusher";
 import AsesorSelector from "./AsesorSelector";
 
@@ -117,7 +117,7 @@ function Chatstudy() {
 
   const cargarConversaciones = async () => {
     try {
-      const res = await axios.get(`http://localhost:3001/chat/getConversacion/estudiante/${userId}`);
+      const res = await API.get(`/chat/getConversacion/estudiante/${userId}`);
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
           id: Number(conv.id),  // Normalizar a Number
@@ -142,7 +142,7 @@ function Chatstudy() {
 
   const cargarMensajes = async (chatId) => {
     try {
-      const res = await axios.get(`http://localhost:3001/chat/getMensajes/${chatId}`);
+      const res = await API.get(`/chat/getMensajes/${chatId}`);
       if (res.data.ok) setMessages(res.data.mensajes || []);
     } catch {}
   };
@@ -171,7 +171,7 @@ function Chatstudy() {
     setMessage("");
     if (inputRef.current) { inputRef.current.style.height = "auto"; }
     try {
-      await axios.post("http://localhost:3001/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "estudiante" });
+      await API.post("/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "estudiante" });
       setChats(prev => prev.map(c => c.id === selectedChatId
         ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
         : c
@@ -184,7 +184,7 @@ function Chatstudy() {
   const handleSelectAsesor = async (asesor) => {
     setCreatingConversation(true);
     try {
-      const response = await axios.post("http://localhost:3001/chat/crearConversacion", {
+      const response = await API.post("/chat/crearConversacion", {
         id_estudiante: userId,
         id_asesor: asesor.id
       });

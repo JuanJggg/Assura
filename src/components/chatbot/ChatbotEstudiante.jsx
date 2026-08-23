@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Menu from "../menu";
 import Header from "../header";
-import axios from "axios";
+import API from "../../services/api";
 
-const BACKEND = "http://localhost:3001";
+const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const BERT_API = "http://localhost:8000";
 
 // ── Configuración de categorías ──────────────────────────────────────────────

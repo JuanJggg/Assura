@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {AlertCircle, PlusCircle} from 'lucide-react';
-import axios from "axios";
+import API from "../../services/api";
 import Toast from "../util/alert.jsx";
 
 function MateriaRegistration() {
@@ -19,8 +19,8 @@ function MateriaRegistration() {
 
     const getMaterias = async () => {
         try {
-            const res = await axios.post(
-                "http://localhost:3001/asesoria/getMaterias");
+            const res = await API.post(
+                "/asesoria/getMaterias");
             console.log("respuesta", res.data);
             setMaterias(res.data);
         } catch (err) {
@@ -54,7 +54,7 @@ function MateriaRegistration() {
         if (validateForm()) {
 
             try {
-                const res = await axios.post("http://localhost:3001/asesoria/addMateria", formData);
+                const res = await API.post("/asesoria/addMateria", formData);
                 console.log("respuesta", res.data);
                 // Mostrar toast de éxito
                 setToast({

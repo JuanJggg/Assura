@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import API from "../../services/api";
 import { X, MessageCircle } from "lucide-react";
 
 function AsesorSelector({ onClose, onSelectAsesor }) {
@@ -14,7 +14,7 @@ function AsesorSelector({ onClose, onSelectAsesor }) {
   const cargarAsesores = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:3001/asesoria/getAsesoresDisponibles");
+      const res = await API.get("/asesoria/getAsesoresDisponibles");
 
       if (res.data.ok) {
         setAsesores(res.data.asesores);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import API from "../services/api";
 
 const EyeIcon = ({ open }) => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -49,15 +49,20 @@ function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3001/usuarios/login", { email, password });
+      const res = await API.post("/usuarios/login", { email, password });
       if (res.data.ok) {
         localStorage.setItem("usuario", JSON.stringify(res.data.usuario));
-        window.location.href = "/Dashboard";
+        // Redirigir según rol
+        if (res.data.usuario.rol === "Admin") {
+          window.location.href = "/Admin";
+        } else {
+          window.location.href = "/Dashboard";
+        }
       } else {
         alert(res.data.mensaje);
       }
-    } catch {
-      alert("Error en el Inicio de Sesión");
+    } catch (err) {
+      alert(err.response?.data?.mensaje || "Error en el Inicio de Sesión");
     } finally {
       setLoading(false);
     }

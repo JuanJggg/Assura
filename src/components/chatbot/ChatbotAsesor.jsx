@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import Menu from "../menu";
 import Header from "../header";
-import axios from "axios";
+import API from "../../services/api";
 
-const BACKEND = "http://localhost:3001";
+const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const PYTHON_API = "http://localhost:8000";
 
 const IconBook = () => <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;

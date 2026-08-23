@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ForumForm from "./ForumForm";
 import CommentForm from "./CommentForm";
-import axios from "axios";
+import API from "../../services/api";
 import Toast from "../util/alert.jsx";
 
 // ── Avatar helper ──────────────────────────────────────────────
@@ -28,7 +28,7 @@ const Form = () => {
 
   const dataInicial = async () => {
     try {
-      const res = await axios.post("http://localhost:3001/foro/getForos");
+      const res = await API.post("/foro/getForos");
       setTopics(res.data);
       getComentarios();
     } catch {}
@@ -36,14 +36,14 @@ const Form = () => {
 
   const getComentarios = async () => {
     try {
-      const res = await axios.post("http://localhost:3001/foro/getComentario");
+      const res = await API.post("/foro/getComentario");
       setComments(res.data);
     } catch {}
   };
 
   const handleSubmit = async (formData) => {
     try {
-      const res = await axios.post("http://localhost:3001/foro/addForo", { ...formData, id: usuario?.id, rol: usuario?.rol });
+      const res = await API.post("/foro/addForo", { ...formData, id: usuario?.id, rol: usuario?.rol });
       setToast({ type: res.data?.success ? "success" : "error", message: res.data?.mensaje || "Foro creado" });
       dataInicial();
       setShowForm(false);
@@ -52,7 +52,7 @@ const Form = () => {
 
   const handleComment = async (topicId, commentData) => {
     try {
-      const res = await axios.post("http://localhost:3001/foro/addComentario", { idForo: topicId, comentario: commentData.content, id: usuario?.id, rol: usuario?.rol });
+      const res = await API.post("/foro/addComentario", { idForo: topicId, comentario: commentData.content, id: usuario?.id, rol: usuario?.rol });
       setToast({ type: res.data?.success ? "success" : "error", message: res.data?.mensaje || "Comentario agregado" });
       dataInicial();
       getComentarios();
