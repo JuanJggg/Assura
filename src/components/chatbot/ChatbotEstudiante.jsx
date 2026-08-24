@@ -3,8 +3,7 @@ import Menu from "../menu";
 import Header from "../header";
 import API from "../../services/api";
 
-const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:3001";
-const BERT_API = "http://localhost:8000";
+
 
 // ── Configuración de categorías ──────────────────────────────────────────────
 const CATEGORIA_CONFIG = {
@@ -437,7 +436,7 @@ export default function ChatbotEstudiante() {
 
   const checkBert = async () => {
     try {
-      const res = await axios.get(`${BACKEND}/chatbot/health`);
+      const res = await API.get(`/chatbot/health`);
       setBertActivo(res.data.python_bert === "activo");
     } catch { setBertActivo(false); }
   };
@@ -445,7 +444,7 @@ export default function ChatbotEstudiante() {
   const cargarHistorial = async () => {
     if (!userId) return;
     try {
-      const res = await axios.get(`${BACKEND}/chatbot/historial/${userId}`);
+      const res = await API.get(`/chatbot/historial/${userId}`);
       if (res.data.ok) setHistorial(res.data.historial);
     } catch {}
   };
@@ -487,7 +486,7 @@ export default function ChatbotEstudiante() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     try {
-      const res = await axios.post(`${BACKEND}/chatbot/enviar`, {
+      const res = await API.post(`/chatbot/enviar`, {
         id_estudiante: userId,
         mensaje: texto,
         nombre_estudiante: nombreUsuario,

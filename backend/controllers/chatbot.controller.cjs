@@ -4,7 +4,7 @@
 const pool = require("../config/db.cjs");
 const axios = require("axios");
 
-const PYTHON_API = process.env.CHATBOT_IA_URL || "http://localhost:8000";
+const PYTHON_API = process.env.CHATBOT_IA_URL || "https://chatbot.assura.site";
 
 // ── Helper: verificar que el microservicio Python está activo ────────────────────
 async function checkPythonService() {

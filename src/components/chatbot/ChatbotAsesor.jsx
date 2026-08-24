@@ -3,8 +3,7 @@ import Menu from "../menu";
 import Header from "../header";
 import API from "../../services/api";
 
-const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:3001";
-const PYTHON_API = "http://localhost:8000";
+
 
 const IconBook = () => <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IconAlert = () => <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.8"/><line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>;
@@ -116,7 +115,7 @@ export default function ChatbotAsesor() {
 
   const checkBert = async () => {
     try {
-      const res = await axios.get(`${BACKEND}/chatbot/health`);
+      const res = await API.get(`/chatbot/health`);
       setBertActivo(res.data.python_bert === "activo");
     } catch { setBertActivo(false); }
   };
@@ -125,8 +124,8 @@ export default function ChatbotAsesor() {
     setLoading(true);
     try {
       const [statsRes, consultasRes] = await Promise.all([
-        axios.get(`${BACKEND}/chatbot/estadisticas`),
-        axios.get(`${BACKEND}/chatbot/consultas?limit=200`),
+        API.get(`/chatbot/estadisticas`),
+        API.get(`/chatbot/consultas?limit=200`),
       ]);
       if (statsRes.data.ok) setStats(statsRes.data);
       if (consultasRes.data.ok) setConsultas(consultasRes.data.consultas);
@@ -140,9 +139,9 @@ export default function ChatbotAsesor() {
   const cargarConsultas = async (categoria) => {
     try {
       const url = categoria
-        ? `${BACKEND}/chatbot/consultas?categoria=${categoria}&limit=200`
-        : `${BACKEND}/chatbot/consultas?limit=200`;
-      const res = await axios.get(url);
+        ? `/chatbot/consultas?categoria=${categoria}&limit=200`
+        : `/chatbot/consultas?limit=200`;
+      const res = await API.get(url);
       if (res.data.ok) setConsultas(res.data.consultas);
     } catch { /* silencioso */ }
   };
@@ -567,7 +566,8 @@ function ChatbotAsesorPanel({
         intencion: m.intencion || null, categoria: m.categoria || null
       }));
 
-      const res = await axios.post(`${PYTHON_API}/chat`, {
+      const res = await API.post(`/chatbot/enviar`, {
+        id_estudiante: usuario.id,
         mensaje: texto,
         historial: historialApi,
         nombre_estudiante: nombreAsesor,
@@ -588,7 +588,7 @@ function ChatbotAsesorPanel({
     } catch {
       setChatMensajes(prev => [...prev, {
         role: "bot",
-        content: "❌ No pude conectar con el asistente IA. Verifica que el servicio Python esté corriendo en el puerto 8000."
+        content: "❌ No pude conectar con el asistente IA. Verifica que el servicio Python esté corriendo en el servidor."
       }]);
     } finally {
       setChatLoading(false);
