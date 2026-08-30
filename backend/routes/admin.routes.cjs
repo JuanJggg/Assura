@@ -18,4 +18,7 @@ router.post('/eliminarForo', adminController.eliminarForo);
 router.post('/conversaciones', adminController.getConversaciones);
 router.post('/mensajes', adminController.getMensajesConversacion);
 
+// Estudiantes por asesor
+router.post('/estudiantesAsesor', adminController.getEstudiantesDeAsesor);
+
 module.exports = router;

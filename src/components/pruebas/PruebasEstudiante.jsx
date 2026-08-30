@@ -264,7 +264,9 @@ function PruebasEstudiante() {
                                                     { letra: 'B', texto: pregunta.opcion_b },
                                                     { letra: 'C', texto: pregunta.opcion_c },
                                                     { letra: 'D', texto: pregunta.opcion_d },
-                                                ].map(({ letra, texto }) => {
+                                                    { letra: 'E', texto: pregunta.opcion_e },
+                                                    { letra: 'F', texto: pregunta.opcion_f },
+                                                ].filter(({ texto }) => texto && texto.trim()).map(({ letra, texto }) => {
                                                     const selected = respuestas[pregunta.id] === letra;
                                                     return (
                                                         <button

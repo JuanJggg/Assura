@@ -4,6 +4,7 @@ import Header from "./../header";
 import API from "../../services/api";
 import pusher from "../../services/pusher";
 import AsesorSelector from "./AsesorSelector";
+import Toast from "../util/alert.jsx";
 
 // ─── SVG Icons ───────────────────────────────────────────────
 const PlusIcon = () => (
@@ -65,6 +66,7 @@ function Chatstudy() {
   const [showAsesorSelector, setShowAsesorSelector] = useState(false);
   const [creatingConversation, setCreatingConversation] = useState(false);
   const [search, setSearch] = useState("");
+  const [toast, setToast] = useState(null);
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
@@ -82,10 +84,10 @@ function Chatstudy() {
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
     channel.bind("nuevo-mensaje", (data) => {
-      // Comparación numérica estricta para evitar duplicados
-      if (Number(data.remitente_id) !== Number(userId)) {
+      // Comparar ID + tipo para evitar falsos positivos cuando asesor y estudiante tienen el mismo ID numérico
+      const isMyMessage = Number(data.remitente_id) === Number(userId) && data.remitente_tipo === 'estudiante';
+      if (!isMyMessage) {
         setMessages(prev => {
-          // Evitar duplicados por ID de mensaje
           if (data.id && prev.some(m => m.id === data.id)) return prev;
           return [...prev, data];
         });
@@ -194,7 +196,7 @@ function Chatstudy() {
         setShowAsesorSelector(false);
       }
     } catch {
-      alert("No se pudo iniciar la conversación. Intenta nuevamente.");
+      setToast({ type: 'error', message: 'No se pudo iniciar la conversación. Intenta nuevamente.' });
     } finally {
       setCreatingConversation(false);
     }
@@ -385,7 +387,7 @@ function Chatstudy() {
                         );
                       }
                       const msg = item.data;
-                      const isSender = msg.remitente_id == userId;
+                      const isSender = msg.remitente_id == userId && msg.remitente_tipo === 'estudiante';
                       return (
                         <div key={idx} style={{
                           display: "flex",
@@ -520,6 +522,13 @@ function Chatstudy() {
           </div>
         )}
       </div>
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 }

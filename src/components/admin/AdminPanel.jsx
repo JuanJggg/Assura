@@ -111,6 +111,8 @@ function AdminPanel() {
   const [filterEstado, setFilterEstado] = useState("Todos");
   const [expandedForo, setExpandedForo] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [estudiantesAsesor, setEstudiantesAsesor] = useState(null); // { asesor, estudiantes }
+  const [loadingEstudiantes, setLoadingEstudiantes] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -194,6 +196,17 @@ function AdminPanel() {
 
   const formatDate = (d) => new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
   const formatDateTime = (d) => new Date(d).toLocaleString("es-ES", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const verEstudiantesAsesor = async (asesor) => {
+    setLoadingEstudiantes(true);
+    try {
+      const res = await API.post("/admin/estudiantesAsesor", { id_asesor: asesor.id });
+      if (res.data.ok) {
+        setEstudiantesAsesor({ asesor, estudiantes: res.data.estudiantes, total: res.data.total });
+      }
+    } catch (err) { console.error("Error estudiantes asesor:", err); }
+    setLoadingEstudiantes(false);
+  };
 
   // Filtrar usuarios
   const filteredUsers = usuarios.filter(u => {
@@ -462,27 +475,43 @@ function AdminPanel() {
                   }}>{u.bloqueado ? "Bloqueado" : "Activo"}</span>
                 </td>
                 <td style={{ padding: "12px 16px" }}>
-                  <button
-                    disabled={loading}
-                    onClick={() => setConfirmAction({
-                      title: u.bloqueado ? "Desbloquear usuario" : "Bloquear usuario",
-                      message: u.bloqueado
-                        ? `¿Deseas desbloquear a ${u.nombres} ${u.apellidos}? Podrá volver a iniciar sesión.`
-                        : `¿Deseas bloquear a ${u.nombres} ${u.apellidos}? No podrá iniciar sesión hasta que lo desbloquees.`,
-                      danger: !u.bloqueado,
-                      onConfirm: () => toggleBloqueo(u.id, u.rol, !u.bloqueado)
-                    })}
-                    className="admin-action-btn"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6,
-                      padding: "6px 14px", borderRadius: 8, border: "none",
-                      background: u.bloqueado ? "#D1FAE5" : "#FEE2E2",
-                      color: u.bloqueado ? "#059669" : "#DC2626",
-                      fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
-                    }}
-                  >
-                    {u.bloqueado ? <><UnblockIcon /> Desbloquear</> : <><BlockIcon /> Bloquear</>}
-                  </button>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      disabled={loading}
+                      onClick={() => setConfirmAction({
+                        title: u.bloqueado ? "Desbloquear usuario" : "Bloquear usuario",
+                        message: u.bloqueado
+                          ? `¿Deseas desbloquear a ${u.nombres} ${u.apellidos}? Podrá volver a iniciar sesión.`
+                          : `¿Deseas bloquear a ${u.nombres} ${u.apellidos}? No podrá iniciar sesión hasta que lo desbloquees.`,
+                        danger: !u.bloqueado,
+                        onConfirm: () => toggleBloqueo(u.id, u.rol, !u.bloqueado)
+                      })}
+                      className="admin-action-btn"
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "6px 14px", borderRadius: 8, border: "none",
+                        background: u.bloqueado ? "#D1FAE5" : "#FEE2E2",
+                        color: u.bloqueado ? "#059669" : "#DC2626",
+                        fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
+                      }}
+                    >
+                      {u.bloqueado ? <><UnblockIcon /> Desbloquear</> : <><BlockIcon /> Bloquear</>}
+                    </button>
+                    {u.rol === "Asesor" && (
+                      <button
+                        onClick={() => verEstudiantesAsesor(u)}
+                        className="admin-action-btn"
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6,
+                          padding: "6px 14px", borderRadius: 8, border: "none",
+                          background: "#EFF6FF", color: "#2563EB",
+                          fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
+                        }}
+                      >
+                        <EyeIcon /> Estudiantes
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -814,6 +843,96 @@ function AdminPanel() {
       </div>
 
       <ConfirmModal />
+
+      {/* ═══ Modal Estudiantes del Asesor ═══ */}
+      {estudiantesAsesor && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, backdropFilter: "blur(4px)"
+        }} onClick={() => setEstudiantesAsesor(null)}>
+          <div style={{
+            background: "white", borderRadius: 18, width: "100%", maxWidth: 680,
+            maxHeight: "80vh", display: "flex", flexDirection: "column",
+            boxShadow: "0 25px 70px rgba(0,0,0,0.2)", overflow: "hidden",
+            animation: "fadeIn 0.25s ease"
+          }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{
+              background: "linear-gradient(135deg, #2563EB, #1D4ED8)",
+              padding: "20px 24px", color: "white", flexShrink: 0
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: "50%",
+                    background: "rgba(255,255,255,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontWeight: 800, fontSize: 16
+                  }}>
+                    {(estudiantesAsesor.asesor.nombres?.[0] || "A").toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+                      Estudiantes de {estudiantesAsesor.asesor.nombres} {estudiantesAsesor.asesor.apellidos}
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: 12, opacity: 0.8 }}>
+                      {estudiantesAsesor.total} estudiante{estudiantesAsesor.total !== 1 ? "s" : ""} vinculado{estudiantesAsesor.total !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setEstudiantesAsesor(null)} style={{
+                  background: "rgba(255,255,255,0.15)", border: "none", borderRadius: "50%",
+                  width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", color: "white"
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {estudiantesAsesor.estudiantes.length === 0 ? (
+                <div style={{ padding: "48px 24px", textAlign: "center", color: "#9CA3AF" }}>
+                  <p style={{ fontSize: 15, fontWeight: 600 }}>Este asesor no tiene estudiantes vinculados</p>
+                  <p style={{ fontSize: 13 }}>Los estudiantes aparecen cuando inician una conversación con el asesor.</p>
+                </div>
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "#F9FAFB", borderBottom: "1.5px solid #E5E7EB" }}>
+                      {["#", "Estudiante", "Email", "Carrera", "Teléfono", "Contacto"].map(h => (
+                        <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "#6B7280", textTransform: "uppercase" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estudiantesAsesor.estudiantes.map((e, i) => (
+                      <tr key={e.id} style={{ borderBottom: "1px solid #F3F4F6" }}>
+                        <td style={{ padding: "10px 14px", color: "#9CA3AF", fontWeight: 600 }}>{i + 1}</td>
+                        <td style={{ padding: "10px 14px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <Avatar name={e.nombres} size={28} fontSize={11} />
+                            <span style={{ fontWeight: 600, color: "#111827" }}>{e.nombres} {e.apellidos}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "10px 14px", color: "#6B7280" }}>{e.email || "—"}</td>
+                        <td style={{ padding: "10px 14px", color: "#6B7280" }}>{e.carrera || "—"}</td>
+                        <td style={{ padding: "10px 14px", color: "#6B7280" }}>{e.telefono || "—"}</td>
+                        <td style={{ padding: "10px 14px", color: "#9CA3AF", fontSize: 12 }}>
+                          {e.fecha_contacto ? formatDate(e.fecha_contacto) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

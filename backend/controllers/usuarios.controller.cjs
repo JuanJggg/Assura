@@ -15,12 +15,12 @@ exports.getLogin = async (req, res) => {
       `
         SELECT *
         FROM (
-          SELECT email, password, id, 'Asesor' rol, nombres, apellidos, 
+          SELECT email, password, id, 'Asesor' rol, nombres, apellidos, carrera,
                  COALESCE(bloqueado, FALSE) AS bloqueado,
                  COALESCE(es_admin, FALSE) AS es_admin
           FROM public.asesor
           UNION
-          SELECT email, password, id, 'Estudiante' rol, nombres, apellidos,
+          SELECT email, password, id, 'Estudiante' rol, nombres, apellidos, carrera,
                  COALESCE(bloqueado, FALSE) AS bloqueado,
                  FALSE AS es_admin
           FROM public.estudiante
@@ -68,6 +68,7 @@ exports.getLogin = async (req, res) => {
         apellidos: usuario.apellidos,
         rol: rolFinal,
         email: usuario.email,
+        carrera: usuario.carrera,
       },
     });
 
@@ -118,6 +119,48 @@ exports.crearUsuario = async (req, res) => {
       sucess: false,
       mensaje: "Error al crear usuario, intente de nuevo.",
     });
+  }
+};
+
+exports.updateUsuario = async (req, res) => {
+  const { id, rol, nombres, apellidos, telefono, carrera, email } = req.body;
+
+  console.log("Actualizar usuario:", { id, rol, nombres, apellidos, telefono, carrera, email });
+
+  if (!id || !rol) {
+    return res.status(400).json({ ok: false, mensaje: "Faltan datos requeridos (id, rol)" });
+  }
+
+  try {
+    const tabla = rol === "Asesor" || rol === "Admin" ? "asesor" : "estudiante";
+
+    const result = await pool.query(
+      `UPDATE public.${tabla} SET nombres = $1, apellidos = $2, telefono = $3, carrera = $4, email = $5 WHERE id = $6 RETURNING id, nombres, apellidos, telefono, carrera, email`,
+      [nombres, apellidos, telefono, carrera, email, id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, mensaje: "Usuario no encontrado" });
+    }
+
+    const usuario = result.rows[0];
+    console.log("Usuario actualizado:", usuario);
+
+    res.json({
+      ok: true,
+      mensaje: "Datos actualizados correctamente",
+      usuario: {
+        id: usuario.id,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos,
+        telefono: usuario.telefono,
+        carrera: usuario.carrera,
+        email: usuario.email,
+      },
+    });
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al actualizar los datos" });
   }
 };
 

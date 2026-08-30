@@ -25,7 +25,7 @@ function MateriaRegistration() {
             setMaterias(res.data);
         } catch (err) {
             console.log(err);
-            alert("Error al registrar");
+            setToast({ type: 'error', message: 'Error al cargar materias' });
         }
     }
 
@@ -64,7 +64,7 @@ function MateriaRegistration() {
                 getMaterias();
             } catch (err) {
                 console.log(err);
-                alert("Error al registrar");
+                setToast({ type: 'error', message: 'Error al registrar materia' });
             }
             // console.log('Form data submitted:', formData);
             // setSubmitStatus('success');

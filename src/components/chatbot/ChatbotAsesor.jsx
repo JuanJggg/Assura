@@ -124,8 +124,8 @@ export default function ChatbotAsesor() {
     setLoading(true);
     try {
       const [statsRes, consultasRes] = await Promise.all([
-        API.get(`/chatbot/estadisticas`),
-        API.get(`/chatbot/consultas?limit=200`),
+        API.get(`/chatbot/estadisticas?asesor_id=${usuario.id}`),
+        API.get(`/chatbot/consultas?limit=200&asesor_id=${usuario.id}`),
       ]);
       if (statsRes.data.ok) setStats(statsRes.data);
       if (consultasRes.data.ok) setConsultas(consultasRes.data.consultas);
@@ -139,8 +139,8 @@ export default function ChatbotAsesor() {
   const cargarConsultas = async (categoria) => {
     try {
       const url = categoria
-        ? `/chatbot/consultas?categoria=${categoria}&limit=200`
-        : `/chatbot/consultas?limit=200`;
+        ? `/chatbot/consultas?categoria=${categoria}&limit=200&asesor_id=${usuario.id}`
+        : `/chatbot/consultas?limit=200&asesor_id=${usuario.id}`;
       const res = await API.get(url);
       if (res.data.ok) setConsultas(res.data.consultas);
     } catch { /* silencioso */ }

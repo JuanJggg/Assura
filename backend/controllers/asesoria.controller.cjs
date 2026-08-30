@@ -24,23 +24,24 @@ exports.crearAsesoria = async (req, res) => {
     const activo = activa ? 'S' : 'N';
     try {
 
-        // Validación de traslape de horario
+        // Validación de traslape de horario (solo para la misma materia)
         const conflicto = await pool.query(
             `SELECT 1
              FROM public.asesor_materia
              WHERE asesor_id = $1
+               AND materia_id = $4
                AND (
                  $2::time < hora_final
                  AND
                  $3::time > hora_inicial
                  )`,
-            [idUsuario, hora_inicial, hora_final]
+            [idUsuario, hora_inicial, hora_final, materia]
         );
 
         if (conflicto.rowCount > 0) {
             return res.status(201).json({
                 success: false,
-                mensaje: "El asesor ya tiene una asesoría en ese rango horario."
+                mensaje: "Ya tienes un horario que se cruza con este rango para la misma materia."
             });
         }
 
@@ -66,24 +67,31 @@ exports.crearAsesoria = async (req, res) => {
 };
 
 exports.getAsesoria = async (req, res) => {
+    const { asesor_id } = req.body;
     try {
-        const result = await pool.query(`SELECT a.id,
-                                                a.asesor_id,
-                                                a.materia_id,
-                                                a.descripcion,
-                                                a.precio_hora,
-                                                a.precio_sesion,
-                                                a.activa,
-                                                a.hora_inicial,
-                                                a.hora_final,
-                                                b.nombre     materia,
-                                                a.materia_id id_materia
-                                         FROM public.asesor_materia a
-                                                  inner join public.materia b on a.materia_id = b.id
-        `);
+        let query = `SELECT a.id,
+                                a.asesor_id,
+                                a.materia_id,
+                                a.descripcion,
+                                a.precio_hora,
+                                a.precio_sesion,
+                                a.activa,
+                                a.hora_inicial,
+                                a.hora_final,
+                                b.nombre     materia,
+                                a.materia_id id_materia
+                         FROM public.asesor_materia a
+                                  inner join public.materia b on a.materia_id = b.id`;
+        const params = [];
+        if (asesor_id) {
+            query += ` WHERE a.asesor_id = $1`;
+            params.push(asesor_id);
+        }
+        query += ` ORDER BY b.nombre, a.hora_inicial`;
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (error) {
-        res.status(500).json({error: "Error al obtener comentarios"});
+        res.status(500).json({error: "Error al obtener asesorias"});
     }
 };
 

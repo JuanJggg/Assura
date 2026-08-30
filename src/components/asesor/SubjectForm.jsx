@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {AlertCircle} from "lucide-react";
+import {AlertCircle, Plus, Trash2, Clock} from "lucide-react";
 
 function SubjectForm({onSubmit, initialData, categories}) {
 
@@ -15,14 +15,16 @@ function SubjectForm({onSubmit, initialData, categories}) {
         hora_final: initialData ? initialData.hora_final : '18:00',
     });
 
+    // Horarios adicionales (solo para creación nueva, no edición)
+    const [horariosExtra, setHorariosExtra] = useState([]);
+
     const [errors, setErrors] = useState({});
-    const [setSubmitStatus] = useState('idle');
 
     const validateForm = () => {
         const newErrors = {};
 
-        if (!formData.materia.trim()) {
-            newErrors.materia = 'El nombre de la materia es requerido';
+        if (!formData.materia || !formData.materia.toString().trim()) {
+            newErrors.materia = 'La materia es requerida';
         }
 
         if (!formData.descripcion.trim()) {
@@ -42,6 +44,13 @@ function SubjectForm({onSubmit, initialData, categories}) {
             newErrors.hora_final = 'La hora final debe ser mayor que la hora inicial';
         }
 
+        // Validar horarios extra
+        horariosExtra.forEach((h, idx) => {
+            if (h.hora_inicial >= h.hora_final) {
+                newErrors[`extra_${idx}`] = 'La hora inicial debe ser menor que la hora final';
+            }
+        });
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -53,7 +62,6 @@ function SubjectForm({onSubmit, initialData, categories}) {
             [name]: type === 'number' ? parseFloat(value) || 0 : value
         }));
 
-        // Clear error when field is edited
         if (errors[name]) {
             setErrors(prev => ({...prev, [name]: undefined}));
         }
@@ -66,16 +74,42 @@ function SubjectForm({onSubmit, initialData, categories}) {
         }));
     };
 
+    const addHorario = () => {
+        setHorariosExtra(prev => [...prev, {
+            hora_inicial: '08:00',
+            hora_final: '18:00'
+        }]);
+    };
+
+    const removeHorario = (idx) => {
+        setHorariosExtra(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const updateHorario = (idx, field, value) => {
+        setHorariosExtra(prev => prev.map((h, i) => 
+            i === idx ? {...h, [field]: value} : h
+        ));
+        if (errors[`extra_${idx}`]) {
+            setErrors(prev => ({...prev, [`extra_${idx}`]: undefined}));
+        }
+    };
+
     const handleSubmit = (e) => {
-        console.log("holaaa", validateForm(), errors, formData)
         e.preventDefault();
 
         if (validateForm()) {
-            onSubmit(formData);
-        } else {
-            setSubmitStatus('error');
+            if (!initialData && horariosExtra.length > 0) {
+                // Modo creación con múltiples horarios
+                onSubmit({
+                    ...formData,
+                    horariosExtra: horariosExtra
+                });
+            } else {
+                onSubmit(formData);
+            }
         }
     };
+
     return (
         <div className="p-6">
             <h3 className="text-lg font-medium text-gray-800 mb-4">
@@ -165,52 +199,139 @@ function SubjectForm({onSubmit, initialData, categories}) {
                         {errors.precio_sesion && <p className="mt-1 text-sm text-red-600">{errors.precio_sesion}</p>}
                     </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Horario */}
-                    <div>
-                        <label htmlFor="hora_inicial" className="block text-sm font-medium text-gray-700 mb-1">
-                            Hora inicial *
-                        </label>
-                        <input
-                            type="time"
-                            id="hora_inicial"
-                            name="hora_inicial"
-                            value={formData.hora_inicial}
-                            onChange={handleChange}
-                            className={`w-full px-4 py-3 rounded-lg border ${
-                                errors.hora_inicial ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
-                        />
-                        {errors.hora_inicial && (
-                            <p className="mt-1 text-sm text-red-600 flex items-center">
-                                <AlertCircle className="w-4 h-4 mr-1"/>
-                                {errors.hora_inicial}
-                            </p>
+
+                {/* ═══ SECCIÓN DE HORARIOS ═══ */}
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-red-600" />
+                            <span className="text-sm font-semibold text-gray-800">
+                                Horario {!initialData && horariosExtra.length > 0 ? '1' : 'de disponibilidad'} *
+                            </span>
+                        </div>
+                        {!initialData && (
+                            <button
+                                type="button"
+                                onClick={addHorario}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md transition-colors border border-red-200"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                Agregar otro horario
+                            </button>
                         )}
                     </div>
 
-                    <div>
-                        <label htmlFor="hora_final" className="block text-sm font-medium text-gray-700 mb-1">
-                            Hora final *
-                        </label>
-                        <input
-                            type="time"
-                            id="hora_final"
-                            name="hora_final"
-                            value={formData.hora_final}
-                            onChange={handleChange}
-                            className={`w-full px-4 py-3 rounded-lg border ${
-                                errors.hora_final ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
-                        />
-                        {errors.hora_final && (
-                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                    {/* Horario principal */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label htmlFor="hora_inicial" className="block text-sm font-medium text-gray-700 mb-1">
+                                Hora inicial
+                            </label>
+                            <input
+                                type="time"
+                                id="hora_inicial"
+                                name="hora_inicial"
+                                value={formData.hora_inicial}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.hora_inicial ? 'border-red-500' : 'border-gray-300'
+                                } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
+                            />
+                            {errors.hora_inicial && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <AlertCircle className="w-4 h-4 mr-1"/>
+                                    {errors.hora_inicial}
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="hora_final" className="block text-sm font-medium text-gray-700 mb-1">
+                                Hora final
+                            </label>
+                            <input
+                                type="time"
+                                id="hora_final"
+                                name="hora_final"
+                                value={formData.hora_final}
+                                onChange={handleChange}
+                                className={`w-full px-4 py-3 rounded-lg border ${
+                                    errors.hora_final ? 'border-red-500' : 'border-gray-300'
+                                } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors`}
+                            />
+                            {errors.hora_final && (
+                                <p className="mt-1 text-sm text-red-600 flex items-center">
+                                    <AlertCircle className="w-4 h-4 mr-1"/>
+                                    {errors.hora_final}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ═══ HORARIOS ADICIONALES ═══ */}
+                {horariosExtra.map((horario, idx) => (
+                    <div key={idx} className="border border-red-200 rounded-lg p-4 bg-red-50 relative">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-red-600" />
+                                <span className="text-sm font-semibold text-gray-800">
+                                    Horario {idx + 2}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => removeHorario(idx)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-100 rounded-md transition-colors"
+                                title="Eliminar horario"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                Quitar
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Hora inicial
+                                </label>
+                                <input
+                                    type="time"
+                                    value={horario.hora_inicial}
+                                    onChange={(e) => updateHorario(idx, 'hora_inicial', e.target.value)}
+                                    className={`w-full px-4 py-3 rounded-lg border ${
+                                        errors[`extra_${idx}`] ? 'border-red-500' : 'border-gray-300'
+                                    } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors bg-white`}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Hora final
+                                </label>
+                                <input
+                                    type="time"
+                                    value={horario.hora_final}
+                                    onChange={(e) => updateHorario(idx, 'hora_final', e.target.value)}
+                                    className={`w-full px-4 py-3 rounded-lg border ${
+                                        errors[`extra_${idx}`] ? 'border-red-500' : 'border-gray-300'
+                                    } focus:outline-none focus:ring-2 focus:ring-red-600 transition-colors bg-white`}
+                                />
+                            </div>
+                        </div>
+                        {errors[`extra_${idx}`] && (
+                            <p className="mt-2 text-sm text-red-600 flex items-center">
                                 <AlertCircle className="w-4 h-4 mr-1"/>
-                                {errors.hora_final}
+                                {errors[`extra_${idx}`]}
                             </p>
                         )}
                     </div>
-                </div>
+                ))}
+
+                {!initialData && horariosExtra.length === 0 && (
+                    <p className="text-xs text-gray-400 -mt-2">
+                        💡 Puedes agregar múltiples horarios para que los estudiantes elijan el que mejor les convenga.
+                    </p>
+                )}
 
                 {/* Estado (activa/inactiva) */}
                 <div className="col-span-1 md:col-span-2">
@@ -246,7 +367,8 @@ function SubjectForm({onSubmit, initialData, categories}) {
                         type="submit"
                         className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-600 transition-colors duration-200"
                     >
-                        {initialData ? 'Actualizar Materia' : 'Guardar Materia'}
+                        {initialData ? 'Actualizar Materia' : 
+                         horariosExtra.length > 0 ? `Guardar ${horariosExtra.length + 1} Horarios` : 'Guardar Materia'}
                     </button>
                 </div>
             </form>

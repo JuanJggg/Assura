@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import Toast from "./util/alert.jsx";
 
 const EyeIcon = ({ open }) => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -61,6 +62,7 @@ function Register() {
     telefono: "", carrera: "", email: "", password: "",
   });
   const [errores, setErrores] = useState({});
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 50);
@@ -106,10 +108,13 @@ function Register() {
     setLoading(true);
     try {
       const res = await API.post("/usuarios/addUser", formData);
-      alert(res.data.mensaje);
-      if (res.data.ok) goTo("/");
+      setToast({
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.mensaje
+      });
+      if (res.data.ok) setTimeout(() => goTo("/"), 1500);
     } catch {
-      alert("Error al registrar");
+      setToast({ type: 'error', message: 'Error al registrar' });
     } finally {
       setLoading(false);
     }
@@ -295,6 +300,13 @@ function Register() {
           </div>
         </div>
       </div>
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 }

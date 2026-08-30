@@ -207,28 +207,32 @@ function PruebasManager() {
                             <p className="text-sm font-bold text-red-600 mb-2">Pregunta {idx + 1}</p>
                             <p className="text-gray-800 font-medium mb-4">{p.texto_pregunta}</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {['A', 'B', 'C', 'D'].map(letra => (
-                                    <div
-                                        key={letra}
-                                        className={`p-3 rounded-lg border-2 ${
-                                            p.respuesta_correcta?.trim() === letra
-                                                ? 'border-green-500 bg-green-50'
-                                                : 'border-gray-200 bg-gray-50'
-                                        }`}
-                                    >
-                                        <span className={`font-bold mr-2 ${
-                                            p.respuesta_correcta?.trim() === letra ? 'text-green-600' : 'text-gray-500'
-                                        }`}>
-                                            {letra})
-                                        </span>
-                                        <span className="text-gray-700">
-                                            {p[`opcion_${letra.toLowerCase()}`]}
-                                        </span>
-                                        {p.respuesta_correcta?.trim() === letra && (
-                                            <span className="ml-2 text-green-600 text-xs font-bold">✓ Correcta</span>
-                                        )}
-                                    </div>
-                                ))}
+                                {['A', 'B', 'C', 'D', 'E', 'F'].map(letra => {
+                                    const opcionTexto = p[`opcion_${letra.toLowerCase()}`];
+                                    if (!opcionTexto) return null;
+                                    return (
+                                        <div
+                                            key={letra}
+                                            className={`p-3 rounded-lg border-2 ${
+                                                p.respuesta_correcta?.trim() === letra
+                                                    ? 'border-green-500 bg-green-50'
+                                                    : 'border-gray-200 bg-gray-50'
+                                            }`}
+                                        >
+                                            <span className={`font-bold mr-2 ${
+                                                p.respuesta_correcta?.trim() === letra ? 'text-green-600' : 'text-gray-500'
+                                            }`}>
+                                                {letra})
+                                            </span>
+                                            <span className="text-gray-700">
+                                                {opcionTexto}
+                                            </span>
+                                            {p.respuesta_correcta?.trim() === letra && (
+                                                <span className="ml-2 text-green-600 text-xs font-bold">✓ Correcta</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}

@@ -8,6 +8,20 @@ exports.crearConversacion = async (req, res) => {
   console.log("Crear conversacion entre estudiante", id_estudiante, "y asesor", id_asesor);
   
   try {
+    // Validar que el estudiante existe
+    const estCheck = await pool.query("SELECT id FROM public.estudiante WHERE id = $1", [id_estudiante]);
+    if (estCheck.rowCount === 0) {
+      console.log("Estudiante no encontrado:", id_estudiante);
+      return res.status(400).json({ error: "El estudiante no existe", ok: false });
+    }
+
+    // Validar que el asesor existe
+    const aseCheck = await pool.query("SELECT id FROM public.asesor WHERE id = $1", [id_asesor]);
+    if (aseCheck.rowCount === 0) {
+      console.log("Asesor no encontrado:", id_asesor);
+      return res.status(400).json({ error: "El asesor no existe", ok: false });
+    }
+
     // Verificar si ya existe
     const existing = await pool.query(
       `SELECT c.*, 

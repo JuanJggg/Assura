@@ -26,9 +26,9 @@ exports.crearPrueba = async (req, res) => {
             const p = preguntas[i];
             await client.query(
                 `INSERT INTO public.prueba_pregunta 
-                 (prueba_id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, respuesta_correcta, orden)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-                [pruebaId, p.texto_pregunta, p.opcion_a, p.opcion_b, p.opcion_c, p.opcion_d, p.respuesta_correcta, i + 1]
+                 (prueba_id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, opcion_e, opcion_f, respuesta_correcta, orden)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                [pruebaId, p.texto_pregunta, p.opcion_a, p.opcion_b, p.opcion_c, p.opcion_d, p.opcion_e || null, p.opcion_f || null, p.respuesta_correcta, i + 1]
             );
         }
 
@@ -79,7 +79,7 @@ exports.getPreguntasPrueba = async (req, res) => {
     const { prueba_id } = req.body;
     try {
         const result = await pool.query(
-            `SELECT id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, respuesta_correcta, orden
+            `SELECT id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, opcion_e, opcion_f, respuesta_correcta, orden
              FROM public.prueba_pregunta
              WHERE prueba_id = $1
              ORDER BY orden ASC`,
@@ -211,7 +211,7 @@ exports.getPreguntasAsignacion = async (req, res) => {
 
         // Obtener preguntas SIN la respuesta correcta (para el estudiante)
         const preguntas = await pool.query(
-            `SELECT id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, orden
+            `SELECT id, texto_pregunta, opcion_a, opcion_b, opcion_c, opcion_d, opcion_e, opcion_f, orden
              FROM public.prueba_pregunta
              WHERE prueba_id = $1
              ORDER BY orden ASC`,
@@ -376,6 +376,7 @@ exports.getDetalleRespuestas = async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT pp.texto_pregunta, pp.opcion_a, pp.opcion_b, pp.opcion_c, pp.opcion_d,
+                    pp.opcion_e, pp.opcion_f,
                     pp.respuesta_correcta, pr.respuesta_estudiante, pr.es_correcta
              FROM public.prueba_respuesta pr
              INNER JOIN public.prueba_pregunta pp ON pr.pregunta_id = pp.id

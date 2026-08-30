@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import Toast from "./util/alert.jsx";
 
 const EyeIcon = ({ open }) => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -39,6 +40,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [toast, setToast] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,10 +61,10 @@ function Login() {
           window.location.href = "/Dashboard";
         }
       } else {
-        alert(res.data.mensaje);
+        setToast({ type: 'error', message: res.data.mensaje });
       }
     } catch (err) {
-      alert(err.response?.data?.mensaje || "Error en el Inicio de Sesión");
+      setToast({ type: 'error', message: err.response?.data?.mensaje || 'Error en el Inicio de Sesión' });
     } finally {
       setLoading(false);
     }
@@ -298,6 +300,13 @@ function Login() {
           </div>
         </div>
       </div>
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </>
   );
 }

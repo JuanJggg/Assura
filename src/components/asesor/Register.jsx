@@ -22,7 +22,7 @@ function Register() {
 
                 {/* Contenido principal */}
                 <main className="flex-1 bg-gray-100 overflow-hidden" style={{ display: "flex", flexDirection: "column" }}>
-                    <div className="p-8" style={{ flexShrink: 0 }}>
+                    <div className="p-8" style={{ flex: 1, overflowY: "auto" }}>
                         <div className="mb-6 flex justify-between items-center">
                             <div>
                                 <button

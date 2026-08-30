@@ -21,20 +21,41 @@ function SubjectRegistration() {
             if (editingSubject) {
                 url = "/asesoria/updAsesoria";
             }
-            const res = await API.post(url, {
+
+            // Crear la asesoría principal (primer horario)
+            const mainData = {
                 ...newSubject,
                 idUsuario: usuario.id
-            });
+            };
+            delete mainData.horariosExtra;
+
+            const res = await API.post(url, mainData);
             console.log("respuesta ase", res.data);
+
+            // Si hay horarios extra, crear una asesoría por cada uno
+            if (!editingSubject && newSubject.horariosExtra && newSubject.horariosExtra.length > 0) {
+                for (const horario of newSubject.horariosExtra) {
+                    const extraData = {
+                        ...mainData,
+                        hora_inicial: horario.hora_inicial,
+                        hora_final: horario.hora_final,
+                    };
+                    await API.post("/asesoria/addAsesoria", extraData);
+                }
+            }
+
             // Mostrar toast de éxito
+            const totalHorarios = 1 + (newSubject.horariosExtra?.length || 0);
             setToast({
                 type: res.data?.success ? 'success' : 'error',
-                message: res.data?.mensaje || "Asesoría registrada correctamente",
+                message: totalHorarios > 1
+                    ? `${totalHorarios} horarios registrados correctamente`
+                    : (res.data?.mensaje || "Asesoría registrada correctamente"),
             });
             getAsesoria();
         } catch (err) {
             console.error(err);
-            alert("Error al registrar");
+            setToast({ type: 'error', message: 'Error al registrar la asesoría' });
         }
 
 
@@ -61,8 +82,8 @@ function SubjectRegistration() {
             });
             getAsesoria();
         } catch (err) {
-            console.err(err);
-            alert("Error al registrar");
+            console.error(err);
+            setToast({ type: 'error', message: 'Error al eliminar la asesoría' });
         }
     };
 
@@ -80,8 +101,8 @@ function SubjectRegistration() {
             });
             getAsesoria();
         } catch (err) {
-            console.err(err);
-            alert("Error al registrar");
+            console.error(err);
+            setToast({ type: 'error', message: 'Error al actualizar el estado' });
         }
     };
 
@@ -97,20 +118,22 @@ function SubjectRegistration() {
             console.log("respuesta", res.data);
             setCategories(res.data);
         } catch (err) {
-            console.err(err);
-            alert("Error al registrar");
+            console.error(err);
+            setToast({ type: 'error', message: 'Error al cargar materias' });
         }
     }
 
     const getAsesoria = async () => {
         try {
             const res = await API.post(
-                "/asesoria/getAsesoria");
+                "/asesoria/getAsesoria", {
+                    asesor_id: usuario.id
+                });
             console.log("respuesta", res.data);
             setSubjects(res.data)
         } catch (err) {
-            console.err(err);
-            alert("Error al registrar");
+            console.error(err);
+            setToast({ type: 'error', message: 'Error al cargar asesorías' });
         }
     }
 

@@ -2,10 +2,23 @@ const pool = require("../config/db.cjs");
 
 exports.getAsesores = async (req, res) => {
     try {
-        const result = await pool.query(`SELECT c.id AS id_asesor, b.nombre materia, c.nombres || ' ' || c.apellidos asesor, c.telefono
+        const result = await pool.query(`SELECT c.id AS id_asesor, 
+                                                a.id AS id_asesoria,
+                                                b.nombre materia, 
+                                                c.nombres || ' ' || c.apellidos asesor, 
+                                                c.telefono,
+                                                c.carrera,
+                                                a.descripcion,
+                                                a.precio_hora,
+                                                a.precio_sesion,
+                                                a.hora_inicial,
+                                                a.hora_final,
+                                                a.activa
                                          FROM public.asesor_materia a
                                                   inner join public.materia b on a.materia_id = b.id
-                                                  inner join public.asesor c on c.id = a.asesor_id`);
+                                                  inner join public.asesor c on c.id = a.asesor_id
+                                         WHERE a.activa = 'S'
+                                         ORDER BY c.nombres, b.nombre, a.hora_inicial`);
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({error: "Error al obtener usuarios"});

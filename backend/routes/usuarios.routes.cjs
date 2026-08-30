@@ -4,6 +4,7 @@ const usuarioController = require('../controllers/usuarios.controller.cjs');
 
 router.post('/login', usuarioController.getLogin);
 router.post('/addUser', usuarioController.crearUsuario);
+router.post('/updateUser', usuarioController.updateUsuario);
 router.post('/forgotPassword', usuarioController.forgotPassword);
 router.get('/validateToken/:token', usuarioController.validateToken);
 router.post('/resetPassword/:token', usuarioController.resetPassword);

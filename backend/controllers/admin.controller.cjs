@@ -291,3 +291,35 @@ exports.getMensajesConversacion = async (req, res) => {
         res.status(500).json({ ok: false, mensaje: "Error al obtener mensajes" });
     }
 };
+
+// =============================================
+// ESTUDIANTES DE UN ASESOR
+// =============================================
+exports.getEstudiantesDeAsesor = async (req, res) => {
+    const { id_asesor } = req.body;
+
+    if (!id_asesor) {
+        return res.status(400).json({ ok: false, mensaje: "Se requiere id_asesor" });
+    }
+
+    try {
+        const result = await pool.query(
+            `SELECT e.id, e.nombres, e.apellidos, e.email, e.carrera, e.telefono,
+                    c.fecha_creacion as fecha_contacto
+             FROM chats_conversacion c
+             INNER JOIN estudiante e ON c.id_estudiante = e.id
+             WHERE c.id_asesor = $1
+             ORDER BY e.nombres ASC`,
+            [id_asesor]
+        );
+
+        res.json({
+            ok: true,
+            estudiantes: result.rows,
+            total: result.rowCount
+        });
+    } catch (error) {
+        console.error("Error al obtener estudiantes del asesor:", error);
+        res.status(500).json({ ok: false, mensaje: "Error al obtener estudiantes" });
+    }
+};

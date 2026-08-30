@@ -71,10 +71,10 @@ function Chatbot() {
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
     channel.bind("nuevo-mensaje", (data) => {
-      // Comparación numérica estricta para evitar duplicados
-      if (Number(data.remitente_id) !== Number(userId)) {
+      // Comparar ID + tipo para evitar falsos positivos cuando asesor y estudiante tienen el mismo ID numérico
+      const isMyMessage = Number(data.remitente_id) === Number(userId) && data.remitente_tipo === 'asesor';
+      if (!isMyMessage) {
         setMessages(prev => {
-          // Evitar duplicados por ID de mensaje
           if (data.id && prev.some(m => m.id === data.id)) return prev;
           return [...prev, data];
         });
@@ -329,7 +329,7 @@ function Chatbot() {
                     );
                   }
                   const msg = item.data;
-                  const isSender = msg.remitente_id == userId;
+                  const isSender = msg.remitente_id == userId && msg.remitente_tipo === 'asesor';
                   return (
                     <div key={idx} style={{
                       display: "flex",

@@ -124,40 +124,48 @@ exports.getHistorial = async (req, res) => {
 
 // ── GET /chatbot/estadisticas ─────────────────────────────────────────────────────
 exports.getEstadisticas = async (req, res) => {
+  const { asesor_id } = req.query;
+  
+  // Subquery para filtrar solo estudiantes del asesor
+  const filtroEstudiantes = asesor_id
+    ? `WHERE cm.id_estudiante IN (SELECT DISTINCT c.id_estudiante FROM chats_conversacion c WHERE c.id_asesor = ${parseInt(asesor_id)})`
+    : '';
+
   try {
     // Conteo por categoría
     const countResult = await pool.query(
       `SELECT categoria, COUNT(*) as count
-       FROM chatbot_mensajes
+       FROM chatbot_mensajes cm
+       ${filtroEstudiantes}
        GROUP BY categoria
        ORDER BY count DESC`
     );
 
     // Total de mensajes
     const totalResult = await pool.query(
-      "SELECT COUNT(*) as total FROM chatbot_mensajes"
+      `SELECT COUNT(*) as total FROM chatbot_mensajes cm ${filtroEstudiantes}`
     );
 
     // Estudiantes únicos
     const estudiantesResult = await pool.query(
-      "SELECT COUNT(DISTINCT id_estudiante) as total FROM chatbot_mensajes"
+      `SELECT COUNT(DISTINCT cm.id_estudiante) as total FROM chatbot_mensajes cm ${filtroEstudiantes}`
     );
 
     // Confianza promedio
     const confianzaResult = await pool.query(
-      "SELECT AVG(confianza) as promedio FROM chatbot_mensajes"
+      `SELECT AVG(cm.confianza) as promedio FROM chatbot_mensajes cm ${filtroEstudiantes}`
     );
 
     // Mensajes últimos 7 días
     const recientesResult = await pool.query(
-      `SELECT DATE(fecha) as dia, COUNT(*) as count
-       FROM chatbot_mensajes
-       WHERE fecha >= NOW() - INTERVAL '7 days'
-       GROUP BY DATE(fecha)
+      `SELECT DATE(cm.fecha) as dia, COUNT(*) as count
+       FROM chatbot_mensajes cm
+       ${filtroEstudiantes ? filtroEstudiantes + " AND" : "WHERE"} cm.fecha >= NOW() - INTERVAL '7 days'
+       GROUP BY DATE(cm.fecha)
        ORDER BY dia ASC`
     );
 
-    // Estudiantes con más consultas (para asesor)
+    // Estudiantes con más consultas (solo los del asesor)
     const topEstudiantesResult = await pool.query(
       `SELECT cm.id_estudiante, 
               COALESCE(e.nombres || ' ' || e.apellidos, 'Estudiante #' || cm.id_estudiante) as nombre,
@@ -166,17 +174,25 @@ exports.getEstadisticas = async (req, res) => {
               MODE() WITHIN GROUP (ORDER BY cm.categoria) as categoria_frecuente
        FROM chatbot_mensajes cm
        LEFT JOIN estudiante e ON e.id = cm.id_estudiante
+       ${filtroEstudiantes ? `WHERE cm.id_estudiante IN (SELECT DISTINCT c.id_estudiante FROM chats_conversacion c WHERE c.id_asesor = ${parseInt(asesor_id)})` : ''}
        GROUP BY cm.id_estudiante, e.nombres, e.apellidos
        ORDER BY total_consultas DESC
        LIMIT 10`
     );
 
+    // Calcular porcentajes para categorías
+    const totalMensajes = parseInt(totalResult.rows[0]?.total || 0);
+    const categoriasConPorcentaje = countResult.rows.map(cat => ({
+      ...cat,
+      porcentaje: totalMensajes > 0 ? Math.round((parseInt(cat.count) / totalMensajes) * 100) : 0
+    }));
+
     return res.json({
       ok: true,
-      total_mensajes: parseInt(totalResult.rows[0]?.total || 0),
+      total_mensajes: totalMensajes,
       total_estudiantes: parseInt(estudiantesResult.rows[0]?.total || 0),
       confianza_promedio: parseFloat(confianzaResult.rows[0]?.promedio || 0).toFixed(3),
-      por_categoria: countResult.rows,
+      por_categoria: categoriasConPorcentaje,
       actividad_reciente: recientesResult.rows,
       top_estudiantes: topEstudiantesResult.rows,
     });
@@ -188,7 +204,7 @@ exports.getEstadisticas = async (req, res) => {
 
 // ── GET /chatbot/consultas ────────────────────────────────────────────────────────
 exports.getConsultas = async (req, res) => {
-  const { categoria, limit = 100 } = req.query;
+  const { categoria, limit = 100, asesor_id } = req.query;
 
   try {
     let query = `
@@ -198,14 +214,25 @@ exports.getConsultas = async (req, res) => {
       FROM chatbot_mensajes cm
       LEFT JOIN estudiante e ON e.id = cm.id_estudiante
     `;
+    const conditions = [];
     const params = [];
 
+    // Filtrar por asesor (solo estudiantes vinculados)
+    if (asesor_id) {
+      conditions.push(`cm.id_estudiante IN (SELECT DISTINCT c.id_estudiante FROM chats_conversacion c WHERE c.id_asesor = $${params.length + 1})`);
+      params.push(parseInt(asesor_id));
+    }
+
     if (categoria) {
-      query += " WHERE cm.categoria = $1";
+      conditions.push(`cm.categoria = $${params.length + 1}`);
       params.push(categoria);
     }
 
-    query += " ORDER BY cm.fecha DESC LIMIT $" + (params.length + 1);
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
+    }
+
+    query += ` ORDER BY cm.fecha DESC LIMIT $${params.length + 1}`;
     params.push(parseInt(limit));
 
     const result = await pool.query(query, params);

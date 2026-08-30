@@ -9,7 +9,7 @@ function PruebaForm({ onSubmit, materias }) {
     });
 
     const [preguntas, setPreguntas] = useState([
-        { texto_pregunta: '', opcion_a: '', opcion_b: '', opcion_c: '', opcion_d: '', respuesta_correcta: 'A' }
+        { texto_pregunta: '', opcion_a: '', opcion_b: '', opcion_c: '', opcion_d: '', opcion_e: '', opcion_f: '', respuesta_correcta: 'A' }
     ]);
 
     const [errors, setErrors] = useState({});
@@ -35,7 +35,7 @@ function PruebaForm({ onSubmit, materias }) {
     const addPregunta = () => {
         setPreguntas(prev => [
             ...prev,
-            { texto_pregunta: '', opcion_a: '', opcion_b: '', opcion_c: '', opcion_d: '', respuesta_correcta: 'A' }
+            { texto_pregunta: '', opcion_a: '', opcion_b: '', opcion_c: '', opcion_d: '', opcion_e: '', opcion_f: '', respuesta_correcta: 'A' }
         ]);
     };
 
@@ -52,7 +52,12 @@ function PruebaForm({ onSubmit, materias }) {
         preguntas.forEach((p, i) => {
             if (!p.texto_pregunta.trim() || !p.opcion_a.trim() || !p.opcion_b.trim() ||
                 !p.opcion_c.trim() || !p.opcion_d.trim()) {
-                newErrors[`pregunta_${i}`] = 'Todos los campos de la pregunta son requeridos';
+                newErrors[`pregunta_${i}`] = 'Todos los campos obligatorios de la pregunta son requeridos (A-D)';
+            }
+            // Validar que si E o F están como respuesta correcta, la opción exista
+            if ((p.respuesta_correcta === 'E' && !p.opcion_e?.trim()) ||
+                (p.respuesta_correcta === 'F' && !p.opcion_f?.trim())) {
+                newErrors[`pregunta_${i}`] = 'La opción marcada como correcta debe tener contenido';
             }
         });
 
@@ -189,11 +194,13 @@ function PruebaForm({ onSubmit, materias }) {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {[
-                                    { letra: 'A', field: 'opcion_a', color: 'blue' },
-                                    { letra: 'B', field: 'opcion_b', color: 'green' },
-                                    { letra: 'C', field: 'opcion_c', color: 'purple' },
-                                    { letra: 'D', field: 'opcion_d', color: 'orange' },
-                                ].map(({ letra, field, color }) => (
+                                    { letra: 'A', field: 'opcion_a', color: 'blue', required: true },
+                                    { letra: 'B', field: 'opcion_b', color: 'green', required: true },
+                                    { letra: 'C', field: 'opcion_c', color: 'purple', required: true },
+                                    { letra: 'D', field: 'opcion_d', color: 'orange', required: true },
+                                    { letra: 'E', field: 'opcion_e', color: 'teal', required: false },
+                                    { letra: 'F', field: 'opcion_f', color: 'pink', required: false },
+                                ].map(({ letra, field, color, required }) => (
                                     <div key={letra} className="flex items-center gap-2">
                                         <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                                             pregunta.respuesta_correcta === letra
@@ -207,7 +214,7 @@ function PruebaForm({ onSubmit, materias }) {
                                             value={pregunta[field]}
                                             onChange={e => handlePreguntaChange(index, field, e.target.value)}
                                             className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm focus:outline-none focus:ring-red-600 focus:border-red-600"
-                                            placeholder={`Opción ${letra}`}
+                                            placeholder={`Opción ${letra}${required ? '' : ' (opcional)'}`}
                                         />
                                     </div>
                                 ))}
@@ -217,21 +224,28 @@ function PruebaForm({ onSubmit, materias }) {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Respuesta correcta *
                                 </label>
-                                <div className="flex gap-3">
-                                    {['A', 'B', 'C', 'D'].map(letra => (
-                                        <button
-                                            key={letra}
-                                            type="button"
-                                            onClick={() => handlePreguntaChange(index, 'respuesta_correcta', letra)}
-                                            className={`w-10 h-10 rounded-full font-bold text-sm transition-all duration-200 ${
-                                                pregunta.respuesta_correcta === letra
-                                                    ? 'bg-green-500 text-white shadow-md scale-110'
-                                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            {letra}
-                                        </button>
-                                    ))}
+                                <div className="flex gap-3 flex-wrap">
+                                    {['A', 'B', 'C', 'D', 'E', 'F'].map(letra => {
+                                        const field = `opcion_${letra.toLowerCase()}`;
+                                        const hasContent = letra === 'E' || letra === 'F' ? !!pregunta[field]?.trim() : true;
+                                        return (
+                                            <button
+                                                key={letra}
+                                                type="button"
+                                                onClick={() => handlePreguntaChange(index, 'respuesta_correcta', letra)}
+                                                disabled={!hasContent}
+                                                className={`w-10 h-10 rounded-full font-bold text-sm transition-all duration-200 ${
+                                                    pregunta.respuesta_correcta === letra
+                                                        ? 'bg-green-500 text-white shadow-md scale-110'
+                                                        : hasContent
+                                                            ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                                            : 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                                }`}
+                                            >
+                                                {letra}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
