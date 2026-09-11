@@ -129,7 +129,7 @@ function Header() {
         .edit-save-btn:hover:not(:disabled) { background: #B91C1C !important; }
         .edit-save-btn { transition: background 0.15s; }
       `}</style>
-      <header style={{
+      <header className="header-bar" style={{
         background: "white", borderBottom: "1px solid #E5E7EB",
         padding: "0 20px", height: 60, display: "flex",
         alignItems: "center", justifyContent: "space-between",
@@ -141,7 +141,7 @@ function Header() {
         </div>
 
         {/* Search */}
-        <div style={{ position: "relative", flex: 1, maxWidth: 320, margin: "0 32px" }}>
+        <div className="header-search-wrapper" style={{ position: "relative", flex: 1, maxWidth: 320, margin: "0 32px" }}>
           <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
             <SearchIcon />
           </div>
@@ -171,7 +171,7 @@ function Header() {
               }}>
                 {initials}
               </div>
-              <div style={{ lineHeight: 1.3 }}>
+              <div className="header-user-name" style={{ lineHeight: 1.3 }}>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#111827" }}>
                   {usuario.nombres} {usuario.apellidos}
                 </p>
@@ -218,7 +218,8 @@ function Header() {
         }} onClick={() => setShowEditModal(false)}>
           <div className="edit-modal-content" style={{
             background: "white", borderRadius: 18, width: "100%", maxWidth: 440,
-            boxShadow: "0 25px 70px rgba(0,0,0,0.2)", overflow: "hidden"
+            boxShadow: "0 25px 70px rgba(0,0,0,0.2)", overflow: "hidden",
+            margin: "0 auto"
           }} onClick={e => e.stopPropagation()}>
 
             {/* Header */}
@@ -252,7 +253,7 @@ function Header() {
 
             {/* Form */}
             <div style={{ padding: "22px 24px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+              <div className="edit-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
                     Nombres *
@@ -300,7 +301,7 @@ function Header() {
                   }}
                 />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+              <div className="edit-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
                 <div>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 4 }}>
                     Teléfono

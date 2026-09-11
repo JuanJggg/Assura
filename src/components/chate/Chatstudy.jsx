@@ -6,6 +6,16 @@ import pusher from "../../services/pusher";
 import AsesorSelector from "./AsesorSelector";
 import Toast from "../util/alert.jsx";
 
+// ── Helper: URL completa ──────────────────────────────────────
+const getFileUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  return `${base}${path}`;
+};
+
+const isImageUrl = (url) => /\.(jpe?g|png|gif|webp)$/i.test(url);
+
 // ─── SVG Icons ───────────────────────────────────────────────
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
@@ -17,6 +27,18 @@ const SendIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
     <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const PaperclipIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
   </svg>
 );
 
@@ -55,10 +77,88 @@ function Avatar({ name, size = 44, fontSize = 17 }) {
   );
 }
 
+// ── Componente de mensaje con soporte de archivos ─────────────
+function MessageBubble({ msg, isSender, chatName }) {
+  const hasFile = msg.archivo_url || msg.tipo_contenido === 'imagen' || msg.tipo_contenido === 'pdf';
+  const fileUrl = getFileUrl(msg.archivo_url);
+  const isImg = msg.tipo_contenido === 'imagen' || (msg.archivo_url && isImageUrl(msg.archivo_url));
+
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: isSender ? "flex-end" : "flex-start",
+      marginBottom: 6
+    }}>
+      {!isSender && (
+        <div style={{ marginRight: 8, alignSelf: "flex-end", marginBottom: 2 }}>
+          <Avatar name={chatName} size={28} fontSize={11} />
+        </div>
+      )}
+      <div style={{ maxWidth: "65%" }}>
+        <div style={{
+          padding: hasFile && !msg.contenido ? "6px" : "10px 14px",
+          borderRadius: isSender ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+          background: isSender
+            ? "linear-gradient(135deg,#DC2626,#B91C1C)"
+            : "white",
+          color: isSender ? "white" : "#111827",
+          boxShadow: isSender
+            ? "0 2px 10px rgba(220,38,38,0.2)"
+            : "0 1px 4px rgba(0,0,0,0.07)",
+          border: isSender ? "none" : "1px solid #F3F4F6",
+          overflow: "hidden"
+        }}>
+          {/* Archivo adjunto */}
+          {hasFile && fileUrl && (
+            isImg ? (
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+                <img src={fileUrl} alt="Imagen" loading="lazy" style={{
+                  maxWidth: "100%", maxHeight: 240, borderRadius: msg.contenido ? "8px 8px 0 0" : 12,
+                  objectFit: "cover", display: "block",
+                  marginBottom: msg.contenido ? 8 : 0
+                }} />
+              </a>
+            ) : (
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 12px", borderRadius: 8, marginBottom: msg.contenido ? 8 : 0,
+                  background: isSender ? "rgba(255,255,255,0.15)" : "#FEF2F2",
+                  color: isSender ? "white" : "#DC2626",
+                  textDecoration: "none", fontSize: 12, fontWeight: 600
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5"/>
+                  <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+                {msg.archivo_url?.split('/').pop() || "Documento PDF"}
+              </a>
+            )
+          )}
+          {msg.contenido && (
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, wordBreak: "break-word" }}>{msg.contenido}</p>
+          )}
+        </div>
+        <p style={{
+          margin: "3px 4px 0",
+          fontSize: 10, color: "#9CA3AF",
+          textAlign: isSender ? "right" : "left"
+        }}>
+          {msg.fecha_envio
+            ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true })
+            : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 // ─── Main Component ───────────────────────────────────────────
 function Chatstudy() {
   const [selectedChatId, _setSelectedChatId] = useState(null);
-  // Wrapper para siempre normalizar el ID a Number
   const setSelectedChatId = (id) => _setSelectedChatId(id != null ? Number(id) : null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
@@ -67,11 +167,16 @@ function Chatstudy() {
   const [creatingConversation, setCreatingConversation] = useState(false);
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState(null);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
   const selectedChatIdRef = useRef(selectedChatId);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
@@ -84,7 +189,6 @@ function Chatstudy() {
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
     channel.bind("nuevo-mensaje", (data) => {
-      // Comparar ID + tipo para evitar falsos positivos cuando asesor y estudiante tienen el mismo ID numérico
       const isMyMessage = Number(data.remitente_id) === Number(userId) && data.remitente_tipo === 'estudiante';
       if (!isMyMessage) {
         setMessages(prev => {
@@ -122,7 +226,7 @@ function Chatstudy() {
       const res = await API.get(`/chat/getConversacion/estudiante/${userId}`);
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
-          id: Number(conv.id),  // Normalizar a Number
+          id: Number(conv.id),
           name: `${conv.asesor_nombre} ${conv.asesor_apellido}`,
           status: conv.asesor_materia,
           lastMessage: conv.ultimo_mensaje || "Sin mensajes",
@@ -131,7 +235,6 @@ function Chatstudy() {
             : ""
         }));
         setChats(conversaciones);
-        // Solo auto-seleccionar si no hay chat seleccionado actualmente
         if (conversaciones.length > 0 && !selectedChatIdRef.current) {
           setSelectedChatId(conversaciones[0].id);
         }
@@ -149,7 +252,6 @@ function Chatstudy() {
     } catch {}
   };
 
-  // Scroll suave solo al nuevo mensaje
   const prevCountRef = useRef(0);
   useEffect(() => {
     if (messages.length > prevCountRef.current) {
@@ -158,28 +260,76 @@ function Chatstudy() {
     prevCountRef.current = messages.length;
   }, [messages]);
 
+  // ── Seleccionar archivo ──
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      setToast({ type: "error", message: "El archivo excede 10 MB" });
+      return;
+    }
+    const isImg = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImg && !isPdf) {
+      setToast({ type: "error", message: "Solo imágenes y PDF permitidos" });
+      return;
+    }
+    setPendingFile(file);
+    setFilePreview(isImg ? URL.createObjectURL(file) : null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePendingFile = () => {
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setPendingFile(null);
+    setFilePreview(null);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChatId) return;
+    if ((!message.trim() && !pendingFile) || !selectedChatId) return;
     const text = message.trim();
+
+    // Optimistic: mostrar mensaje temporalmente
     const tempMessage = {
       id_conversacion: selectedChatId,
       contenido: text,
       remitente_id: userId,
       remitente_tipo: "estudiante",
-      fecha_envio: new Date().toISOString()
+      fecha_envio: new Date().toISOString(),
+      tipo_contenido: pendingFile ? (pendingFile.type === "application/pdf" ? "pdf" : "imagen") : "texto",
+      archivo_url: filePreview || (pendingFile ? "uploading..." : null)
     };
     setMessages(prev => [...prev, tempMessage]);
     setMessage("");
-    if (inputRef.current) { inputRef.current.style.height = "auto"; }
+    if (inputRef.current) inputRef.current.style.height = "auto";
+
+    const fileToSend = pendingFile;
+    removePendingFile();
+    setUploading(true);
+
     try {
-      await API.post("/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "estudiante" });
+      const fd = new FormData();
+      fd.append("chatId", selectedChatId);
+      fd.append("content", text);
+      fd.append("senderId", userId);
+      fd.append("senderType", "estudiante");
+      if (fileToSend) fd.append("archivo", fileToSend);
+
+      await API.post("/chat/mensajes", fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      // Recargar mensajes para obtener URL real
+      cargarMensajes(selectedChatId);
       setChats(prev => prev.map(c => c.id === selectedChatId
-        ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
+        ? { ...c, lastMessage: text || "📎 Archivo", lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
         : c
       ));
     } catch (err) {
       console.error("Error al enviar:", err);
+      setToast({ type: "error", message: "Error al enviar mensaje" });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -214,7 +364,6 @@ function Chatstudy() {
     c.lastMessage?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Agrupar mensajes por fecha
   const groupedMessages = messages.reduce((acc, msg, i) => {
     const date = new Date(msg.fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
     const prev = i > 0 ? new Date(messages[i-1].fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) : null;
@@ -239,6 +388,8 @@ function Chatstudy() {
         .send-btn { transition: all 0.15s ease; }
         .new-chat-btn:hover { background: #B91C1C !important; }
         .new-chat-btn { transition: background 0.15s; }
+        .clip-btn { transition: all 0.15s; opacity: 0.5; }
+        .clip-btn:hover { opacity: 1; color: #DC2626 !important; }
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "'Inter',sans-serif", overflow: "hidden" }}>
@@ -246,16 +397,14 @@ function Chatstudy() {
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Menu />
 
-          {/* ── Layout principal ── */}
-          <div style={{ display: "flex", flex: 1, overflow: "hidden", background: "#F0F2F5" }}>
+          <div className="chat-layout" style={{ display: "flex", flex: 1, overflow: "hidden", background: "#F0F2F5" }}>
 
             {/* ── Lista de chats ── */}
-            <div style={{
+            <div className={`chat-sidebar${mobileShowChat ? " hidden-mobile" : ""}`} style={{
               width: 320, flexShrink: 0, background: "white",
               borderRight: "1px solid #E5E7EB",
               display: "flex", flexDirection: "column", overflow: "hidden"
             }}>
-              {/* Cabecera lista */}
               <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #F3F4F6", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Chats</h2>
@@ -273,29 +422,20 @@ function Chatstudy() {
                     <PlusIcon />
                   </button>
                 </div>
-                {/* Buscador */}
                 <div style={{ position: "relative" }}>
                   <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
                     <SearchIcon />
                   </div>
                   <input
-                    type="text"
-                    placeholder="Buscar conversación..."
-                    value={search}
+                    type="text" placeholder="Buscar conversación..." value={search}
                     onChange={e => setSearch(e.target.value)}
-                    style={{
-                      width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10,
-                      border: "1.5px solid #E5E7EB", fontSize: 13, background: "#F9FAFB",
-                      outline: "none", fontFamily: "inherit", boxSizing: "border-box",
-                      color: "#374151"
-                    }}
+                    style={{ width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10, border: "1.5px solid #E5E7EB", fontSize: 13, background: "#F9FAFB", outline: "none", fontFamily: "inherit", boxSizing: "border-box", color: "#374151" }}
                     onFocus={e => e.target.style.borderColor = "#DC2626"}
                     onBlur={e => e.target.style.borderColor = "#E5E7EB"}
                   />
                 </div>
               </div>
 
-              {/* Lista */}
               <div className="chat-list" style={{ flex: 1, overflowY: "auto" }}>
                 {filteredChats.length === 0 ? (
                   <div style={{ padding: 32, textAlign: "center" }}>
@@ -303,21 +443,14 @@ function Chatstudy() {
                     <p style={{ color: "#9CA3AF", fontSize: 14, margin: 0 }}>
                       {search ? "Sin resultados" : "No hay conversaciones"}
                     </p>
-                    {!search && (
-                      <p style={{ color: "#D1D5DB", fontSize: 12, marginTop: 6 }}>
-                        Presiona + para iniciar una nueva
-                      </p>
-                    )}
+                    {!search && <p style={{ color: "#D1D5DB", fontSize: 12, marginTop: 6 }}>Presiona + para iniciar una nueva</p>}
                   </div>
                 ) : (
                   filteredChats.map(chat => (
-                    <div
-                      key={chat.id}
-                      className={`chat-item${selectedChatId === chat.id ? " active" : ""}`}
-                      onClick={() => setSelectedChatId(chat.id)}
+                    <div key={chat.id} className={`chat-item${selectedChatId === chat.id ? " active" : ""}`}
+                      onClick={() => { setSelectedChatId(chat.id); setMobileShowChat(true); }}
                       style={{
-                        padding: "12px 16px", cursor: "pointer",
-                        borderBottom: "1px solid #F3F4F6",
+                        padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #F3F4F6",
                         background: selectedChatId === chat.id ? "#FFF5F5" : "white",
                         transition: "background 0.15s",
                         borderLeft: selectedChatId === chat.id ? "3px solid #DC2626" : "3px solid transparent"
@@ -327,9 +460,7 @@ function Chatstudy() {
                         <Avatar name={chat.name} size={46} fontSize={17} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
-                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {chat.name}
-                            </p>
+                            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chat.name}</p>
                             <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>{chat.lastMessageTime}</span>
                           </div>
                           <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -345,16 +476,28 @@ function Chatstudy() {
             </div>
 
             {/* ── Ventana de chat ── */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div className={`chat-main-panel${mobileShowChat ? " active-mobile" : ""}`} style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               {selectedChat ? (
                 <>
-                  {/* Header del chat */}
+                  {/* Header */}
                   <div style={{
                     padding: "12px 20px", background: "white",
                     borderBottom: "1px solid #E5E7EB",
                     display: "flex", alignItems: "center", gap: 12,
                     boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flexShrink: 0
                   }}>
+                    <button
+                      className="chat-back-btn"
+                      onClick={() => setMobileShowChat(false)}
+                      style={{
+                        display: "none", alignItems: "center", justifyContent: "center",
+                        width: 36, height: 36, borderRadius: "50%",
+                        background: "#F3F4F6", border: "none", cursor: "pointer",
+                        color: "#374151", flexShrink: 0
+                      }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </button>
                     <Avatar name={selectedChat.name} size={42} fontSize={16} />
                     <div>
                       <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{selectedChat.name}</h3>
@@ -365,17 +508,7 @@ function Chatstudy() {
                   </div>
 
                   {/* Mensajes */}
-                  <div
-                    className="chat-messages"
-                    style={{
-                      flex: 1,
-                      overflowY: "auto",
-                      padding: "20px 24px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 2
-                    }}
-                  >
+                  <div className="chat-messages" style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 2 }}>
                     {groupedMessages.map((item, idx) => {
                       if (item.type === "date") {
                         return (
@@ -388,65 +521,58 @@ function Chatstudy() {
                       }
                       const msg = item.data;
                       const isSender = msg.remitente_id == userId && msg.remitente_tipo === 'estudiante';
-                      return (
-                        <div key={idx} style={{
-                          display: "flex",
-                          justifyContent: isSender ? "flex-end" : "flex-start",
-                          marginBottom: 6
-                        }}>
-                          {!isSender && (
-                            <div style={{ marginRight: 8, alignSelf: "flex-end", marginBottom: 2 }}>
-                              <Avatar name={selectedChat.name} size={28} fontSize={11} />
-                            </div>
-                          )}
-                          <div style={{ maxWidth: "65%" }}>
-                            <div style={{
-                              padding: "10px 14px",
-                              borderRadius: isSender ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
-                              background: isSender
-                                ? "linear-gradient(135deg,#DC2626,#B91C1C)"
-                                : "white",
-                              color: isSender ? "white" : "#111827",
-                              boxShadow: isSender
-                                ? "0 2px 10px rgba(220,38,38,0.2)"
-                                : "0 1px 4px rgba(0,0,0,0.07)",
-                              border: isSender ? "none" : "1px solid #F3F4F6"
-                            }}>
-                              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, wordBreak: "break-word" }}>{msg.contenido}</p>
-                            </div>
-                            <p style={{
-                              margin: "3px 4px 0",
-                              fontSize: 10, color: "#9CA3AF",
-                              textAlign: isSender ? "right" : "left"
-                            }}>
-                              {msg.fecha_envio
-                                ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true })
-                                : ""}
-                            </p>
-                          </div>
-                        </div>
-                      );
+                      return <MessageBubble key={idx} msg={msg} isSender={isSender} chatName={selectedChat.name} />;
                     })}
                     <div ref={messagesEndRef} />
                   </div>
 
+                  {/* File preview */}
+                  {pendingFile && (
+                    <div style={{ padding: "8px 20px 0", background: "white", borderTop: "1px solid #F3F4F6" }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 12px", background: "#F9FAFB", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                        {filePreview ? (
+                          <img src={filePreview} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }} />
+                        ) : (
+                          <div style={{ width: 40, height: 40, borderRadius: 6, background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#DC2626" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" stroke="#DC2626" strokeWidth="1.5"/></svg>
+                          </div>
+                        )}
+                        <span style={{ fontSize: 12, color: "#374151", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pendingFile.name}</span>
+                        <button onClick={removePendingFile} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: 2, display: "flex" }}>
+                          <XIcon />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Input */}
-                  <form
-                    onSubmit={handleSendMessage}
+                  <form onSubmit={handleSendMessage}
                     style={{
                       padding: "12px 20px", background: "white",
-                      borderTop: "1px solid #E5E7EB",
-                      display: "flex", alignItems: "flex-end", gap: 10,
+                      borderTop: pendingFile ? "none" : "1px solid #E5E7EB",
+                      display: "flex", alignItems: "flex-end", gap: 8,
                       boxShadow: "0 -2px 8px rgba(0,0,0,0.04)", flexShrink: 0
                     }}
                   >
+                    {/* Clip button */}
+                    <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} style={{ display: "none" }} />
+                    <button type="button" className="clip-btn" onClick={() => fileInputRef.current?.click()}
+                      disabled={!!pendingFile || uploading}
+                      style={{
+                        width: 40, height: 40, borderRadius: "50%", border: "1px solid #E5E7EB",
+                        background: "white", cursor: pendingFile || uploading ? "not-allowed" : "pointer",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#9CA3AF", flexShrink: 0, padding: 0
+                      }}
+                      title="Adjuntar archivo"
+                    >
+                      <PaperclipIcon />
+                    </button>
+
                     <textarea
-                      ref={inputRef}
-                      value={message}
-                      onChange={handleInputChange}
+                      ref={inputRef} value={message} onChange={handleInputChange}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
-                      placeholder="Escribe un mensaje..."
-                      rows={1}
+                      placeholder="Escribe un mensaje..." rows={1} disabled={uploading}
                       style={{
                         flex: 1, padding: "11px 16px", borderRadius: 22,
                         border: "1.5px solid #E5E7EB", fontSize: 14,
@@ -458,21 +584,18 @@ function Chatstudy() {
                       onFocus={e => e.target.style.borderColor = "#DC2626"}
                       onBlur={e => e.target.style.borderColor = "#E5E7EB"}
                     />
-                    <button
-                      type="submit"
-                      className="send-btn"
-                      disabled={!message.trim()}
+                    <button type="submit" className="send-btn"
+                      disabled={(!message.trim() && !pendingFile) || uploading}
                       title="Enviar"
                       style={{
                         width: 44, height: 44, borderRadius: "50%", border: "none",
-                        background: message.trim()
-                          ? "linear-gradient(135deg,#DC2626,#B91C1C)"
-                          : "#E5E7EB",
-                        color: message.trim() ? "white" : "#9CA3AF",
-                        cursor: message.trim() ? "pointer" : "not-allowed",
+                        background: (message.trim() || pendingFile) && !uploading
+                          ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "#E5E7EB",
+                        color: (message.trim() || pendingFile) && !uploading ? "white" : "#9CA3AF",
+                        cursor: (message.trim() || pendingFile) && !uploading ? "pointer" : "not-allowed",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         flexShrink: 0,
-                        boxShadow: message.trim() ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
+                        boxShadow: (message.trim() || pendingFile) && !uploading ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
                       }}
                     >
                       <SendIcon />
@@ -480,11 +603,7 @@ function Chatstudy() {
                   </form>
                 </>
               ) : (
-                <div style={{
-                  flex: 1, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center",
-                  background: "#F0F2F5"
-                }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F0F2F5" }}>
                   <SelectChatIcon />
                   <p style={{ color: "#9CA3AF", fontSize: 15, fontWeight: 500, margin: 0 }}>Selecciona una conversación</p>
                   <p style={{ color: "#D1D5DB", fontSize: 13, marginTop: 6 }}>o inicia una nueva presionando +</p>
@@ -495,40 +614,20 @@ function Chatstudy() {
         </div>
 
         {showAsesorSelector && (
-          <AsesorSelector
-            onClose={() => setShowAsesorSelector(false)}
-            onSelectAsesor={handleSelectAsesor}
-          />
+          <AsesorSelector onClose={() => setShowAsesorSelector(false)} onSelectAsesor={handleSelectAsesor} />
         )}
 
         {creatingConversation && (
-          <div style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50
-          }}>
-            <div style={{
-              background: "white", borderRadius: 16, padding: "32px 40px",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
-              boxShadow: "0 20px 60px rgba(0,0,0,0.15)"
-            }}>
-              <div style={{
-                width: 40, height: 40, borderRadius: "50%",
-                border: "3px solid #F3F4F6", borderTopColor: "#DC2626",
-                animation: "spin 0.7s linear infinite"
-              }} />
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+            <div style={{ background: "white", borderRadius: 16, padding: "32px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid #F3F4F6", borderTopColor: "#DC2626", animation: "spin 0.7s linear infinite" }} />
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               <p style={{ margin: 0, color: "#374151", fontSize: 14, fontWeight: 500 }}>Iniciando conversación...</p>
             </div>
           </div>
         )}
       </div>
-      {toast && (
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
+      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
     </>
   );
 }

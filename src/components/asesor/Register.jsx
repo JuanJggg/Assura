@@ -22,8 +22,9 @@ function Register() {
 
                 {/* Contenido principal */}
                 <main className="flex-1 bg-gray-100 overflow-hidden" style={{ display: "flex", flexDirection: "column" }}>
-                    <div className="p-8" style={{ flex: 1, overflowY: "auto" }}>
-                        <div className="mb-6 flex justify-between items-center">
+                    {/* Barra de tabs — siempre visible arriba */}
+                    <div className="asesor-tabs" style={{ flexShrink: 0, padding: "24px 32px 8px" }}>
+                        <div className="mb-2 flex justify-between items-center" style={{ flexWrap: "wrap", gap: 8 }}>
                             <div>
                                 <button
                                     onClick={() => setCurrentPage('asesoria')}
@@ -66,7 +67,10 @@ function Register() {
 
                             </div>
                         </div>
+                    </div>
 
+                    {/* Contenido scrollable — solo visible cuando NO es chat */}
+                    <div className="asesor-main" style={{ flex: 1, overflowY: "auto", display: currentPage === 'chat' ? 'none' : 'block', padding: "0 32px 32px" }}>
                         {/* Renderizar con display:none para NO desmontar el Chatbot */}
                         <div style={{ display: currentPage === 'asesoria' ? 'block' : 'none' }}>
                             <SubjectRegistration/>
@@ -78,7 +82,8 @@ function Register() {
                             <PruebasManager/>
                         </div>
                     </div>
-                    {/* Chatbot fuera del padding para que ocupe todo el espacio disponible */}
+
+                    {/* Chatbot — ocupa todo el espacio restante */}
                     <div style={{ display: currentPage === 'chat' ? 'flex' : 'none', flex: 1, overflow: 'hidden' }}>
                         <Chatbot/>
                     </div>

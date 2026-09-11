@@ -177,14 +177,14 @@ function Register() {
         }
       `}</style>
 
-      <div style={{
+      <div className="auth-wrapper" style={{
         minHeight: "100vh", display: "flex", fontFamily: "'Inter',sans-serif",
         background: "linear-gradient(135deg, #fff 55%, #FEF2F2 100%)",
         opacity: mounted ? 1 : 0,
         transition: "opacity 0.35s ease"
       }}>
         {/* Panel izquierdo decorativo */}
-        <div className="reg-left" style={{
+        <div className="reg-left auth-panel-left" style={{
           width: 320, flexShrink: 0, background: "linear-gradient(150deg,#DC2626 0%,#7F1D1D 100%)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: 40, position: "relative", overflow: "hidden"
@@ -221,13 +221,13 @@ function Register() {
         </div>
 
         {/* Panel derecho: formulario */}
-        <div className="reg-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 48px" }}>
+        <div className="reg-right auth-panel-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 48px" }}>
           <div style={{ width: "100%", maxWidth: 680 }}>
             <h2 style={{ margin: "0 0 4px", fontSize: 22, fontWeight: 800, color: "#111827" }}>Registro de usuario</h2>
             <p style={{ margin: "0 0 28px", fontSize: 13, color: "#6B7280" }}>Completa todos los campos para crear tu cuenta</p>
 
             <form onSubmit={onRegister}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
+              <div className="register-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px" }}>
                 <InputField label="Nombres" error={errores.nombres}>
                   <input className="reg-input" type="text" name="nombres" value={formData.nombres} onChange={handleChange} placeholder="Tus nombres" style={inputStyle(errores.nombres)} required />
                 </InputField>

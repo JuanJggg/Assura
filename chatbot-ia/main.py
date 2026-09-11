@@ -133,8 +133,8 @@ def chat(req: ChatRequest):
     mensaje = req.mensaje.strip()
     if not mensaje:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-    if len(mensaje) > 2000:
-        raise HTTPException(status_code=400, detail="Mensaje demasiado largo (máx. 2000 caracteres).")
+    if len(mensaje) > 4000:
+        raise HTTPException(status_code=400, detail="Mensaje demasiado largo (máx. 4000 caracteres).")
 
     historial_raw = [
         {"role": m.role, "content": m.content, "intencion": m.intencion, "categoria": m.categoria}
@@ -180,8 +180,8 @@ def classify(req: ClasificarRequest):
     mensaje = req.mensaje.strip()
     if not mensaje:
         raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
-    if len(mensaje) > 2000:
-        raise HTTPException(status_code=400, detail="El mensaje es demasiado largo (máx. 2000 caracteres).")
+    if len(mensaje) > 4000:
+        raise HTTPException(status_code=400, detail="El mensaje es demasiado largo (máx. 4000 caracteres).")
 
     resultado = classifier.classify(mensaje)
 

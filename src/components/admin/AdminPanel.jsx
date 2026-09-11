@@ -3,6 +3,15 @@ import API from "../../services/api";
 import Header from "../header";
 import Menu from "../menu";
 
+// ── Helpers de archivos ───────────────────────────────────────
+const getFileUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  return `${base}${path}`;
+};
+const isImage = (url) => /\.(jpe?g|png|gif|webp)$/i.test(url);
+
 // ─── Avatar helper ────────────────────────────────────────────
 function Avatar({ name, size = 38, fontSize = 14 }) {
   const colors = ["#DC2626","#B91C1C","#059669","#047857","#D97706","#B45309"];
@@ -303,7 +312,7 @@ function AdminPanel() {
     return (
       <div style={{ animation: "fadeIn 0.3s ease" }}>
         {/* Metric Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
+        <div className="admin-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
           {cards.map(c => (
             <div key={c.label} style={{
               background: "white", borderRadius: 14, padding: "18px 20px",
@@ -320,7 +329,7 @@ function AdminPanel() {
         </div>
 
         {/* Charts Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+        <div className="admin-charts-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
           {/* Mejora promedio */}
           <div style={{ background: "white", borderRadius: 16, padding: "22px 24px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: 8 }}>
@@ -400,7 +409,7 @@ function AdminPanel() {
   const renderUsers = () => (
     <div style={{ animation: "fadeIn 0.3s ease" }}>
       {/* Filters */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+      <div className="admin-users-filters" style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}>
             <circle cx="11" cy="11" r="8" stroke="#9CA3AF" strokeWidth="2"/><path d="M21 21l-4.35-4.35" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"/>
@@ -436,7 +445,7 @@ function AdminPanel() {
       </p>
 
       {/* User Table */}
-      <div style={{ background: "white", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+      <div className="admin-users-table" style={{ background: "white", borderRadius: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ background: "#F9FAFB", borderBottom: "1.5px solid #E5E7EB" }}>
@@ -559,6 +568,23 @@ function AdminPanel() {
                   <p style={{ margin: "8px 0 0", fontSize: 13, color: "#6B7280", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: isExpanded ? "none" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {foro.descripcion}
                   </p>
+                  {/* Archivos adjuntos del foro */}
+                  {foro.archivos && foro.archivos.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                      {foro.archivos.map((url, i) => {
+                        const fullUrl = getFileUrl(url);
+                        return isImage(url) ? (
+                          <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ borderRadius: 6, overflow: "hidden", border: "1px solid #E5E7EB" }}>
+                            <img src={fullUrl} alt="Adjunto" loading="lazy" style={{ maxWidth: 120, maxHeight: 90, objectFit: "cover", display: "block" }} />
+                          </a>
+                        ) : (
+                          <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 10px", borderRadius: 6, background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
+                            📄 {url.split('/').pop()}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => setConfirmAction({
@@ -619,6 +645,20 @@ function AdminPanel() {
                               </button>
                             </div>
                             <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{c.contenido}</p>
+                            {/* Archivo adjunto del comentario */}
+                            {c.archivo_url && (
+                              <div style={{ marginTop: 6 }}>
+                                {isImage(c.archivo_url) ? (
+                                  <a href={getFileUrl(c.archivo_url)} target="_blank" rel="noopener noreferrer" style={{ borderRadius: 6, overflow: "hidden", display: "inline-block", border: "1px solid #E5E7EB" }}>
+                                    <img src={getFileUrl(c.archivo_url)} alt="Adjunto" loading="lazy" style={{ maxWidth: 120, maxHeight: 90, objectFit: "cover", display: "block" }} />
+                                  </a>
+                                ) : (
+                                  <a href={getFileUrl(c.archivo_url)} target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 8px", borderRadius: 6, background: "#FEF2F2", border: "1px solid #FECACA", color: "#DC2626", fontSize: 11, fontWeight: 600, textDecoration: "none" }}>
+                                    📄 {c.archivo_url.split('/').pop()}
+                                  </a>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -680,9 +720,29 @@ function AdminPanel() {
                 <div style={{
                   maxWidth: "70%", padding: "10px 16px", borderRadius: 12,
                   background: m.remitente_tipo === "asesor" ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "#F3F4F6",
-                  color: m.remitente_tipo === "asesor" ? "white" : "#111827"
+                  color: m.remitente_tipo === "asesor" ? "white" : "#111827",
+                  overflow: "hidden"
                 }}>
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{m.contenido}</p>
+                  {/* Archivo adjunto en mensaje */}
+                  {m.archivo_url && (
+                    <div style={{ marginBottom: m.contenido ? 8 : 0 }}>
+                      {(m.tipo_contenido === 'imagen' || isImage(m.archivo_url)) ? (
+                        <a href={getFileUrl(m.archivo_url)} target="_blank" rel="noopener noreferrer">
+                          <img src={getFileUrl(m.archivo_url)} alt="Imagen" loading="lazy" style={{ maxWidth: "100%", maxHeight: 200, borderRadius: 8, objectFit: "cover", display: "block" }} />
+                        </a>
+                      ) : (
+                        <a href={getFileUrl(m.archivo_url)} target="_blank" rel="noopener noreferrer" style={{
+                          display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 6,
+                          background: m.remitente_tipo === "asesor" ? "rgba(255,255,255,0.15)" : "#FEF2F2",
+                          color: m.remitente_tipo === "asesor" ? "white" : "#DC2626",
+                          textDecoration: "none", fontSize: 11, fontWeight: 600
+                        }}>
+                          📄 {m.archivo_url.split('/').pop()}
+                        </a>
+                      )}
+                    </div>
+                  )}
+                  {m.contenido && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{m.contenido}</p>}
                   <p style={{
                     margin: "4px 0 0", fontSize: 10,
                     color: m.remitente_tipo === "asesor" ? "rgba(255,255,255,0.6)" : "#9CA3AF",
@@ -776,7 +836,7 @@ function AdminPanel() {
         <Header />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Menu />
-          <main className="admin-scroll" style={{ flex: 1, background: "#F3F4F6", overflowY: "auto", padding: "28px 32px" }}>
+          <main className="admin-scroll admin-main" style={{ flex: 1, background: "#F3F4F6", overflowY: "auto", padding: "28px 32px" }}>
 
             {/* Admin Header */}
             <div style={{
@@ -808,7 +868,7 @@ function AdminPanel() {
             </div>
 
             {/* Tabs */}
-            <div style={{
+            <div className="admin-tabs" style={{
               display: "flex", gap: 4, marginBottom: 24, background: "white",
               borderRadius: 12, padding: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
             }}>

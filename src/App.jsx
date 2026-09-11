@@ -185,7 +185,7 @@ function App() {
           <main className="dashboard-scroll" style={{ flex: 1, background: "#F3F4F6", overflowY: "auto", padding: "28px 32px" }}>
 
             {/* Greeting */}
-            <div style={{ marginBottom: 28 }}>
+            <div className="dashboard-greeting" style={{ marginBottom: 28 }}>
               <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#111827" }}>
                 {saludo}, <span style={{ color: "#DC2626" }}>{usuario.nombres || "Estudiante"}</span> 👋
               </h1>
@@ -195,7 +195,7 @@ function App() {
             </div>
 
             {/* Stats rápidos */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 32 }}>
+            <div className="dashboard-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 16, marginBottom: 32 }}>
               {[
                 { label: "Asesores disponibles", value: asesoresAgrupados.length, color: "#DC2626", icon: <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
                 { label: "Comentarios en foro", value: comentario.length, color: "#7C3AED", icon: <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
@@ -222,7 +222,7 @@ function App() {
                   <p style={{ color: "#9CA3AF", fontSize: 14 }}>No hay asesores disponibles en este momento.</p>
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 16 }}>
+                <div className="dashboard-asesores-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 16 }}>
                   {asesoresAgrupados.map((asesor) => (
                     <div key={asesor.id_asesor} className="asesor-card" style={{ background: "white", borderRadius: 16, padding: "24px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
                       <Avatar name={asesor.nombre} size={60} fontSize={22} />
@@ -250,7 +250,7 @@ function App() {
             </div>
 
             {/* Comentarios recientes */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 8 }}>
+            <div className="dashboard-bottom-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 8 }}>
               {/* Últimos comentarios */}
               <div style={{ background: "white", borderRadius: 16, padding: "22px 24px", boxShadow: "0 1px 6px rgba(0,0,0,0.06)" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -447,7 +447,7 @@ function App() {
             </div>
 
             {/* Footer del modal */}
-            <div style={{
+            <div className="modal-footer" style={{
               padding: "16px 28px", borderTop: "1px solid #F3F4F6",
               display: "flex", alignItems: "center", justifyContent: "space-between",
               flexShrink: 0, background: "#FAFAFA"

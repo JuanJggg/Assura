@@ -4,6 +4,17 @@ import CommentForm from "./CommentForm";
 import API from "../../services/api";
 import Toast from "../util/alert.jsx";
 
+// ── Helper: Construir URL completa de archivo ─────────────────
+const getFileUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  return `${base}${path}`;
+};
+
+// ── Helper: ¿Es imagen? ──────────────────────────────────────
+const isImage = (url) => /\.(jpe?g|png|gif|webp)$/i.test(url);
+
 // ── Avatar helper ──────────────────────────────────────────────
 function Avatar({ name, size = 38, fontSize = 14 }) {
   const colors = ["#DC2626","#7C3AED","#2563EB","#059669","#D97706","#DB2777"];
@@ -12,6 +23,78 @@ function Avatar({ name, size = 38, fontSize = 14 }) {
     <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg,${colors[idx]},${colors[(idx+1)%colors.length]})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize, flexShrink: 0, userSelect: "none" }}>
       {name?.[0]?.toUpperCase() || "?"}
     </div>
+  );
+}
+
+// ── Componente para renderizar archivos adjuntos ──────────────
+function FileAttachments({ archivos }) {
+  if (!archivos || archivos.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+      {archivos.map((url, i) => {
+        const fullUrl = getFileUrl(url);
+        if (isImage(url)) {
+          return (
+            <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #E5E7EB", display: "block", transition: "transform 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              <img src={fullUrl} alt="Adjunto" loading="lazy" style={{ maxWidth: 200, maxHeight: 160, objectFit: "cover", display: "block" }} />
+            </a>
+          );
+        }
+        // PDF
+        return (
+          <a key={i} href={fullUrl} target="_blank" rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "8px 14px", borderRadius: 8,
+              background: "#FEF2F2", border: "1px solid #FECACA",
+              color: "#DC2626", fontSize: 12, fontWeight: 600,
+              textDecoration: "none", transition: "all 0.15s"
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#FEE2E2"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#FEF2F2"; }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            {url.split('/').pop() || "Documento PDF"}
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Componente para un archivo adjunto en comentario ──────────
+function CommentAttachment({ url }) {
+  if (!url) return null;
+  const fullUrl = getFileUrl(url);
+  if (isImage(url)) {
+    return (
+      <a href={fullUrl} target="_blank" rel="noopener noreferrer" style={{ borderRadius: 6, overflow: "hidden", display: "inline-block", marginTop: 6, border: "1px solid #E5E7EB" }}>
+        <img src={fullUrl} alt="Adjunto" loading="lazy" style={{ maxWidth: 160, maxHeight: 120, objectFit: "cover", display: "block" }} />
+      </a>
+    );
+  }
+  return (
+    <a href={fullUrl} target="_blank" rel="noopener noreferrer"
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 6,
+        padding: "5px 10px", borderRadius: 6, marginTop: 6,
+        background: "#FEF2F2", border: "1px solid #FECACA",
+        color: "#DC2626", fontSize: 11, fontWeight: 600,
+        textDecoration: "none"
+      }}
+    >
+      <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5"/>
+        <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5"/>
+      </svg>
+      {url.split('/').pop() || "PDF"}
+    </a>
   );
 }
 
@@ -41,18 +124,36 @@ const Form = () => {
     } catch {}
   };
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (formData, files = []) => {
     try {
-      const res = await API.post("/foro/addForo", { ...formData, id: usuario?.id, rol: usuario?.rol });
+      const fd = new FormData();
+      fd.append("title", formData.title);
+      fd.append("description", formData.description);
+      fd.append("id", usuario?.id);
+      fd.append("rol", usuario?.rol);
+      files.forEach(f => fd.append("archivos", f));
+
+      const res = await API.post("/foro/addForo", fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       setToast({ type: res.data?.success ? "success" : "error", message: res.data?.mensaje || "Foro creado" });
       dataInicial();
       setShowForm(false);
     } catch { setToast({ type: "error", message: "Error al crear el foro" }); }
   };
 
-  const handleComment = async (topicId, commentData) => {
+  const handleComment = async (topicId, commentData, file) => {
     try {
-      const res = await API.post("/foro/addComentario", { idForo: topicId, comentario: commentData.content, id: usuario?.id, rol: usuario?.rol });
+      const fd = new FormData();
+      fd.append("idForo", topicId);
+      fd.append("comentario", commentData.content);
+      fd.append("id", usuario?.id);
+      fd.append("rol", usuario?.rol);
+      if (file) fd.append("archivo", file);
+
+      const res = await API.post("/foro/addComentario", fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
       setToast({ type: res.data?.success ? "success" : "error", message: res.data?.mensaje || "Comentario agregado" });
       dataInicial();
       getComentarios();
@@ -77,10 +178,10 @@ const Form = () => {
         .forum-scroll::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
         .forum-input:focus { border-color: #DC2626 !important; outline: none; box-shadow: 0 0 0 3px rgba(220,38,38,0.08); }
       `}</style>
-      <div className="forum-scroll" style={{ padding: "28px 32px", fontFamily: "'Inter',sans-serif", maxWidth: 860, margin: "0 auto" }}>
+      <div className="forum-scroll forum-container" style={{ padding: "28px 32px", fontFamily: "'Inter',sans-serif", maxWidth: 860, margin: "0 auto" }}>
 
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div className="forum-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#111827" }}>Foro de la Comunidad</h1>
             <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6B7280" }}>{topics.length} discusiones activas</p>
@@ -133,7 +234,11 @@ const Form = () => {
                         </span>
                       </div>
                       <p style={{ margin: "5px 0 8px", fontSize: 13, color: "#6B7280", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: isOpen ? "none" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{topic.descripcion}</p>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+
+                      {/* Archivos adjuntos del tema */}
+                      <FileAttachments archivos={topic.archivos} />
+
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: topic.archivos?.length ? 10 : 0 }}>
                         <span style={{ fontSize: 11, color: "#9CA3AF" }}>Por <strong style={{ color: "#374151" }}>{topic.creado_por}</strong></span>
                         <span style={{ fontSize: 11, color: "#9CA3AF" }}>{formatDate(new Date(topic.fecha))}</span>
                       </div>
@@ -162,11 +267,12 @@ const Form = () => {
                               <span style={{ fontSize: 11, color: "#9CA3AF" }}>{formatDate(new Date(comment.fecha))}</span>
                             </div>
                             <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{comment.contenido}</p>
+                            <CommentAttachment url={comment.archivo_url} />
                           </div>
                         </div>
                       ))}
                     </div>
-                    <CommentForm onSubmit={(commentData) => handleComment(topic.id, commentData)} />
+                    <CommentForm onSubmit={(commentData, file) => handleComment(topic.id, commentData, file)} />
                   </div>
                 )}
               </div>

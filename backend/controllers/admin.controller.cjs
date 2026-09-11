@@ -169,6 +169,7 @@ exports.getForosAdmin = async (req, res) => {
             `SELECT a.id_foro AS id,
                     a.titulo,
                     a.descripcion,
+                    a.archivos,
                     a.fecha_creacion AS fecha,
                     a.rol AS rol_creador,
                     CASE
@@ -186,6 +187,7 @@ exports.getForosAdmin = async (req, res) => {
             `SELECT a.id_come AS id,
                     a.id_foro,
                     a.contenido,
+                    a.archivo_url,
                     a.fecha_creacion AS fecha,
                     a.rol AS rol_creador,
                     CASE
@@ -262,7 +264,7 @@ exports.getMensajesConversacion = async (req, res) => {
     const { id_conversacion } = req.body;
     try {
         const mensajes = await pool.query(
-            `SELECT m.id, m.contenido, m.remitente_id, m.remitente_tipo, m.fecha_envio, m.leido
+            `SELECT m.id, m.contenido, m.remitente_id, m.remitente_tipo, m.fecha_envio, m.leido, m.tipo_contenido, m.archivo_url
              FROM public.chat_mensaje m
              WHERE m.id_conversacion = $1
              ORDER BY m.fecha_envio ASC`,

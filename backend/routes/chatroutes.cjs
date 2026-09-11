@@ -4,6 +4,7 @@ const express = require("express");
 const router = express.Router();
 const chatController = require("../controllers/chat.controllers.cjs");
 const pusher = require("../config/pusher.cjs");
+const { uploadChat } = require("../config/upload.cjs");
 
 // ============================================
 // RUTAS DE CHAT
@@ -37,7 +38,7 @@ router.get("/getMensajes/:id_conversacion", chatController.getMensajes);
  * Envía un nuevo mensaje (guarda en DB y dispara evento de Pusher)
  * Body: { chatId, content, senderId }
  */
-router.post("/mensajes", chatController.enviarMensaje);
+router.post("/mensajes", uploadChat.single('archivo'), chatController.enviarMensaje);
 
 /**
  * GET /chat/test-pusher

@@ -11,7 +11,12 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || '*',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Servir archivos subidos como estáticos
+const path2 = require("path");
+app.use("/uploads", express.static(path2.join(__dirname, "uploads")));
 
 // Middleware de logging
 app.use((req, res, next) => {

@@ -70,9 +70,9 @@ function ResetPassword() {
         .rp-btn:hover:not(:disabled) { background: #B91C1C !important; transform: translateY(-1px); }
         .rp-btn { transition: all 0.2s; }
       `}</style>
-      <div style={{ display:"flex", height:"100vh", fontFamily:"'Inter',sans-serif", background:"linear-gradient(135deg,#fff 60%,#FEF2F2 100%)" }}>
+      <div className="auth-wrapper" style={{ display:"flex", height:"100vh", fontFamily:"'Inter',sans-serif", background:"linear-gradient(135deg,#fff 60%,#FEF2F2 100%)" }}>
         {/* Panel rojo */}
-        <div style={{ width:380, flexShrink:0, background:"linear-gradient(150deg,#DC2626 0%,#991B1B 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:48, position:"relative", overflow:"hidden" }}>
+        <div className="auth-panel-left" style={{ width:380, flexShrink:0, background:"linear-gradient(150deg,#DC2626 0%,#991B1B 100%)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:48, position:"relative", overflow:"hidden" }}>
           <div style={{ position:"absolute", top:-80, right:-80, width:280, height:280, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }} />
           <img src="/LogoCompleto.png" alt="Assura" style={{ height:52, marginBottom:28, filter:"brightness(0) invert(1)" }} />
           <div style={{ width:72, height:72, borderRadius:"50%", background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:24 }}>
@@ -87,7 +87,7 @@ function ResetPassword() {
         </div>
 
         {/* Panel formulario */}
-        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:48 }}>
+        <div className="auth-panel-right" style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:48 }}>
           <div style={{ width:"100%", maxWidth:380 }}>
             <h2 style={{ margin:"0 0 6px", fontSize:26, fontWeight:800, color:"#111827" }}>Restablecer contraseña</h2>
             <p style={{ margin:"0 0 32px", fontSize:14, color:"#6B7280" }}>Escribe tu nueva contraseña dos veces para confirmar</p>

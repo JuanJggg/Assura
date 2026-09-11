@@ -546,10 +546,10 @@ export default function ChatbotEstudiante() {
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Menu />
 
-          <div style={{ flex: 1, display: "flex", overflow: "hidden", background: "#F3F4F6" }}>
+          <div className="chatbot-layout" style={{ flex: 1, display: "flex", overflow: "hidden", background: "#F3F4F6" }}>
 
             {/* Sidebar historial */}
-            <div style={{ width: mostrarHistorial ? 290 : 0, overflow: "hidden", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)", background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+            <div className="chatbot-history-sidebar" style={{ width: mostrarHistorial ? 290 : 0, overflow: "hidden", transition: "width 0.3s cubic-bezier(0.4,0,0.2,1)", background: "white", borderRight: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flexShrink: 0 }}>
               <div style={{ padding: "18px 16px", borderBottom: "1px solid #F3F4F6" }}>
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1F2937" }}>Historial</h3>
                 <p style={{ margin: "3px 0 0", fontSize: 12, color: "#9CA3AF" }}>{historial.length} consultas anteriores</p>
@@ -586,7 +586,7 @@ export default function ChatbotEstudiante() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
 
               {/* Header del chat */}
-              <div style={{ padding: "12px 20px", background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flexShrink: 0 }}>
+              <div className="chatbot-header" style={{ padding: "12px 20px", background: "white", borderBottom: "1px solid #E5E7EB", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flexShrink: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <button
                     onClick={() => setMostrarHistorial(!mostrarHistorial)}
@@ -610,7 +610,7 @@ export default function ChatbotEstudiante() {
               </div>
 
               {/* Área de mensajes */}
-              <div className="messages-area" style={{ flex: 1, overflowY: "auto", padding: "20px 28px" }}>
+              <div className="messages-area chatbot-messages-area" style={{ flex: 1, overflowY: "auto", padding: "20px 28px" }}>
                 {mensajes.map(msg =>
                   msg.tipo === "user"
                     ? <UserMessage key={msg.id} msg={msg} isNew={msg.isNew} />
@@ -622,7 +622,7 @@ export default function ChatbotEstudiante() {
 
               {/* Sugerencias (solo al inicio) */}
               {mensajes.length === 1 && (
-                <div style={{ padding: "10px 28px 0", display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
+                <div className="chatbot-suggestions" style={{ padding: "10px 28px 0", display: "flex", gap: 8, flexWrap: "wrap", flexShrink: 0 }}>
                   {SUGERENCIAS.map((s, i) => (
                     <button
                       key={i}
@@ -638,7 +638,7 @@ export default function ChatbotEstudiante() {
               <AccionesRapidas onSelect={(msg) => enviarMensaje(msg)} />
 
               {/* Input */}
-              <div style={{ padding: "14px 20px", background: "white", borderTop: "1px solid #E5E7EB", boxShadow: "0 -2px 8px rgba(0,0,0,0.04)", flexShrink: 0 }}>
+              <div className="chatbot-input-area" style={{ padding: "14px 20px", background: "white", borderTop: "1px solid #E5E7EB", boxShadow: "0 -2px 8px rgba(0,0,0,0.04)", flexShrink: 0 }}>
                 <form onSubmit={e => { e.preventDefault(); enviarMensaje(); }} style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
                   <textarea
                     ref={textareaRef}

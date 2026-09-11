@@ -157,7 +157,7 @@ function PruebasEstudiante() {
                 <Header />
                 <div className="flex flex-1 overflow-hidden">
                     <Menu />
-                    <main className="flex-1 bg-gray-100 overflow-y-auto p-8">
+                    <main className="flex-1 bg-gray-100 overflow-y-auto pruebas-main" style={{ padding: "32px" }}>
                         <style>{`
                             .option-btn { transition: all 0.2s ease; }
                             .option-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
@@ -335,7 +335,7 @@ function PruebasEstudiante() {
             <Header />
             <div className="flex flex-1 overflow-hidden">
                 <Menu />
-                <main className="flex-1 bg-gray-100 overflow-y-auto p-8">
+                <main className="flex-1 bg-gray-100 overflow-y-auto pruebas-main" style={{ padding: "32px" }}>
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-gray-800">Mis Pruebas</h2>
                         <p className="text-sm text-gray-500 mt-1">Aquí puedes ver y resolver las pruebas asignadas por tus asesores</p>

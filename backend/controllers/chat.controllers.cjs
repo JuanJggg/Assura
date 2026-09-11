@@ -163,13 +163,13 @@ exports.getMensajes = async (req, res) => {
 };
 
 exports.guardarMensaje = async (data) => {
-  const { chatId, content, senderId, senderType } = data;
+  const { chatId, content, senderId, senderType, tipoContenido, archivoUrl } = data;
 
   try {
     const result = await pool.query(
-      `INSERT INTO chat_mensaje (id_conversacion, contenido, remitente_id, remitente_tipo, fecha_envio, leido)
-       VALUES ($1, $2, $3, $4, NOW(), false) RETURNING *`,
-      [chatId, content, senderId, senderType]
+      `INSERT INTO chat_mensaje (id_conversacion, contenido, remitente_id, remitente_tipo, fecha_envio, leido, tipo_contenido, archivo_url)
+       VALUES ($1, $2, $3, $4, NOW(), false, $5, $6) RETURNING *`,
+      [chatId, content, senderId, senderType, tipoContenido || 'texto', archivoUrl || null]
     );
 
     await pool.query(
@@ -187,13 +187,21 @@ exports.guardarMensaje = async (data) => {
 exports.enviarMensaje = async (req, res) => {
   const { chatId, content, senderId, senderType } = req.body;
 
-  console.log("====== ENVIAR MENSAJE ======");
-  console.log("Datos recibidos:", { chatId, content, senderId, senderType });
+  // Determinar si es un archivo adjunto
+  let tipoContenido = 'texto';
+  let archivoUrl = null;
+  if (req.file) {
+    archivoUrl = `/uploads/chat/${req.file.filename}`;
+    tipoContenido = req.file.mimetype === 'application/pdf' ? 'pdf' : 'imagen';
+  }
 
-  if (!chatId || !content || !senderId) {
+  console.log("====== ENVIAR MENSAJE ======");
+  console.log("Datos recibidos:", { chatId, content, senderId, senderType, tipoContenido, archivoUrl });
+
+  if (!chatId || !senderId || (!content && !archivoUrl)) {
     return res.status(400).json({
       error: "Faltan datos requeridos",
-      required: ["chatId", "content", "senderId"]
+      required: ["chatId", "senderId", "content o archivo"]
     });
   }
 
@@ -219,9 +227,11 @@ exports.enviarMensaje = async (req, res) => {
     console.log("2. Guardando mensaje en BD...");
     const mensajeGuardado = await exports.guardarMensaje({
       chatId,
-      content,
+      content: content || '',
       senderId,
-      senderType: tipoRemitente
+      senderType: tipoRemitente,
+      tipoContenido,
+      archivoUrl
     });
     console.log("✓ Mensaje guardado:", mensajeGuardado);
 
@@ -244,10 +254,12 @@ exports.enviarMensaje = async (req, res) => {
     const datosEvento = {
       id: mensajeGuardado.id,
       id_conversacion: chatId,
-      contenido: content,
+      contenido: content || '',
       remitente_id: senderId,
       remitente_tipo: tipoRemitente,
       fecha_envio: mensajeGuardado.fecha_envio,
+      tipo_contenido: tipoContenido,
+      archivo_url: archivoUrl
     };
     console.log("   Datos:", JSON.stringify(datosEvento, null, 2));
 

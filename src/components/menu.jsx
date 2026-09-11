@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../App.css";
 
@@ -70,10 +70,35 @@ const AdminChatIcon = () => (
   </svg>
 );
 
+const HamburgerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+    <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
+);
+
 function Menu() {
   const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
+
+  // Close on escape key
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") setMobileOpen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const menuItems = usuario.rol === "Admin"
     ? [
@@ -96,6 +121,52 @@ function Menu() {
         { label: "Ranking Asesores", href: "/RankingAsesores",  icon: <RankingIcon /> },
       ];
 
+  const sidebarContent = (
+    <>
+      {/* Sección navegación */}
+      <p style={{ margin: "0 0 8px 8px", fontSize: 10, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Navegación</p>
+      <nav>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+          {menuItems.map(({ label, href, icon }) => {
+            const isActive = location.pathname === href;
+            return (
+              <li key={label} style={{ marginBottom: 3 }}>
+                <button
+                  onClick={() => { navigate(href); setMobileOpen(false); }}
+                  className={`menu-btn${isActive ? " active" : ""}`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", textAlign: "left",
+                    padding: "9px 12px", borderRadius: 10, border: "none",
+                    cursor: "pointer", fontSize: 13.5, fontWeight: isActive ? 600 : 500,
+                    background: isActive ? "#FFF0F0" : "transparent",
+                    color: isActive ? "#DC2626" : "#4B5563",
+                    fontFamily: "inherit"
+                  }}
+                >
+                  <span style={{ opacity: isActive ? 1 : 0.65 }}>{icon}</span>
+                  {label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
+
+      {/* Footer info */}
+      <div style={{
+        padding: "12px", borderRadius: 10, background: "#FFF5F5",
+        border: "1px solid #FEE2E2", marginTop: 12
+      }}>
+        <p style={{ margin: 0, fontSize: 11, color: "#DC2626", fontWeight: 600 }}>Assura</p>
+        <p style={{ margin: "2px 0 0", fontSize: 10, color: "#9CA3AF" }}>Plataforma académica</p>
+      </div>
+    </>
+  );
+
   return (
     <>
       <style>{`
@@ -103,55 +174,54 @@ function Menu() {
         .menu-btn:hover { background: #F3F4F6 !important; color: #111827 !important; }
         .menu-btn.active { background: #FFF0F0 !important; color: #DC2626 !important; }
       `}</style>
-      <aside style={{
+
+      {/* Desktop/Tablet sidebar */}
+      <aside className={`sidebar-menu${mobileOpen ? " open" : ""}`} style={{
         width: 216, flexShrink: 0, background: "white",
         display: "flex", flexDirection: "column",
         padding: "20px 12px", minHeight: "100%",
         borderRight: "1px solid #E5E7EB",
         boxShadow: "1px 0 4px rgba(0,0,0,0.03)"
       }}>
-        {/* Sección navegación */}
-        <p style={{ margin: "0 0 8px 8px", fontSize: 10, fontWeight: 700, color: "#9CA3AF", letterSpacing: "0.08em", textTransform: "uppercase" }}>Navegación</p>
-        <nav>
-          <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-            {menuItems.map(({ label, href, icon }) => {
-              const isActive = location.pathname === href;
-              return (
-                <li key={label} style={{ marginBottom: 3 }}>
-                  <button
-                    onClick={() => navigate(href)}
-                    className={`menu-btn${isActive ? " active" : ""}`}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      width: "100%", textAlign: "left",
-                      padding: "9px 12px", borderRadius: 10, border: "none",
-                      cursor: "pointer", fontSize: 13.5, fontWeight: isActive ? 600 : 500,
-                      background: isActive ? "#FFF0F0" : "transparent",
-                      color: isActive ? "#DC2626" : "#4B5563",
-                      fontFamily: "inherit"
-                    }}
-                  >
-                    <span style={{ opacity: isActive ? 1 : 0.65 }}>{icon}</span>
-                    {label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* Footer info */}
-        <div style={{
-          padding: "12px", borderRadius: 10, background: "#FFF5F5",
-          border: "1px solid #FEE2E2", marginTop: 12
-        }}>
-          <p style={{ margin: 0, fontSize: 11, color: "#DC2626", fontWeight: 600 }}>Assura</p>
-          <p style={{ margin: "2px 0 0", fontSize: 10, color: "#9CA3AF" }}>Plataforma académica</p>
-        </div>
+        {/* Mobile close button */}
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="mobile-menu-close"
+          style={{
+            display: "none", position: "absolute", top: 12, right: 12,
+            background: "#F3F4F6", border: "none", borderRadius: "50%",
+            width: 32, height: 32, cursor: "pointer", color: "#6B7280",
+            alignItems: "center", justifyContent: "center"
+          }}
+        >
+          <CloseIcon />
+        </button>
+        {sidebarContent}
       </aside>
+
+      {/* Mobile overlay */}
+      <div
+        className={`mobile-menu-overlay${mobileOpen ? " open" : ""}`}
+        onClick={() => setMobileOpen(false)}
+      />
+
+      {/* Hamburger FAB */}
+      <button
+        className="hamburger-btn"
+        onClick={() => setMobileOpen(!mobileOpen)}
+        title="Menú"
+      >
+        {mobileOpen ? <CloseIcon /> : <HamburgerIcon />}
+      </button>
+
+      {/* Extra mobile styles */}
+      <style>{`
+        @media (max-width: 767px) {
+          .mobile-menu-close {
+            display: flex !important;
+          }
+        }
+      `}</style>
     </>
   );
 }

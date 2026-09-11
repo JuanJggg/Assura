@@ -117,7 +117,7 @@ function RankingAsesores() {
                 <Header />
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
                     <Menu />
-                    <main className="rank-scroll" style={{ flex: 1, background: '#F3F4F6', overflowY: 'auto', padding: '28px 32px' }}>
+                    <main className="rank-scroll ranking-main" style={{ flex: 1, background: '#F3F4F6', overflowY: 'auto', padding: '28px 32px' }}>
 
                         {/* Header */}
                         <div style={{ marginBottom: 28 }}>
@@ -142,7 +142,7 @@ function RankingAsesores() {
                         </div>
 
                         {/* Stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 28 }}>
+                        <div className="ranking-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 28 }}>
                             <div style={{
                                 background: 'white', borderRadius: 14, padding: '18px 20px',
                                 boxShadow: '0 1px 4px rgba(0,0,0,0.06)', borderLeft: '4px solid #F59E0B',

@@ -165,10 +165,10 @@ export default function ChatbotAsesor() {
         <Header />
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
           <Menu />
-          <main style={{ flex: 1, overflowY: "auto", background: "#F3F4F6", padding: "28px 32px" }}>
+          <main className="chatbot-asesor-main" style={{ flex: 1, overflowY: "auto", background: "#F3F4F6", padding: "28px 32px" }}>
 
             {/* Encabezado */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div className="chatbot-asesor-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, gap: 16 }}>
               <div>
                 <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: "#1F2937", display: "flex", alignItems: "center", gap: 10 }}>
                   <IconBar /> Panel del Asesor — Chatbot IA
@@ -200,10 +200,10 @@ export default function ChatbotAsesor() {
             </div>
 
             {/* Tabs */}
-            <div style={{
+            <div className="chatbot-asesor-tabs" style={{
               display: "flex", gap: 4, marginBottom: 24,
               background: "white", borderRadius: 12, padding: 4,
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)", width: "fit-content"
+              boxShadow: "0 1px 4px rgba(0,0,0,0.06)"
             }}>
               <TabBtn id="dashboard" label="Dashboard" svgIcon={<IconTrend />} />
               <TabBtn id="consultas" label="Consultas" svgIcon={<IconList />} />
@@ -229,14 +229,14 @@ export default function ChatbotAsesor() {
                 {tab === "dashboard" && (
                   <>
                     {/* Stats Cards */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 28 }}>
+                    <div className="chatbot-asesor-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 28 }}>
                       <StatCard svgIcon={<IconMsg />} titulo="Total Consultas" valor={stats?.total_mensajes ?? 0} subtitulo="mensajes procesados" color="#3B82F6" />
                       <StatCard svgIcon={<IconUsers />} titulo="Estudiantes" valor={stats?.total_estudiantes ?? 0} subtitulo="que usaron el chatbot" color="#10B981" />
                       <StatCard svgIcon={<IconTarget />} titulo="Confianza Promedio" valor={`${Math.round((parseFloat(stats?.confianza_promedio || 0)) * 100)}%`} subtitulo="precisión del modelo BERT" color="#8B5CF6" />
                       <StatCard svgIcon={<IconTrend />} titulo="Categoría Principal" valor={CATEGORIA_CONFIG[stats?.por_categoria?.[0]?.categoria]?.nombre?.split(" ")[0] || "—"} subtitulo={CATEGORIA_CONFIG[stats?.por_categoria?.[0]?.categoria]?.nombre || "Sin datos"} color="#F59E0B" />
                     </div>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20, marginBottom: 24 }}>
+                    <div className="chatbot-asesor-charts" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20, marginBottom: 24 }}>
                       {/* Gráfico de barras */}
                       <div style={{ background: "white", borderRadius: 16, padding: 24, boxShadow: "0 1px 6px rgba(0,0,0,0.08)" }}>
                         <h3 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700, color: "#1F2937", display: "flex", alignItems: "center", gap: 8 }}>
@@ -309,7 +309,7 @@ export default function ChatbotAsesor() {
 
                 {/* ═══ TAB CONSULTAS ═══ */}
                 {tab === "consultas" && (
-                  <div style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                  <div className="chatbot-asesor-table" style={{ background: "white", borderRadius: 16, boxShadow: "0 1px 6px rgba(0,0,0,0.08)", overflow: "hidden" }}>
                     {/* Filtros */}
                     <div style={{ padding: "16px 20px", borderBottom: "1px solid #F3F4F6", display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <button onClick={() => setFiltroCategoria("")} style={{

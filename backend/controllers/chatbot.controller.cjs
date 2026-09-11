@@ -42,9 +42,9 @@ exports.enviarMensaje = async (req, res) => {
           mensaje: mensajeLimpio,
           id_estudiante,
           nombre_estudiante,
-          historial: historial.slice(-10), // últimos 10 turnos para contexto
+          historial: historial.slice(-15), // últimos 15 turnos para contexto rico
         },
-        { timeout: 30000 }
+        { timeout: 35000 }
       );
       resultado = response.data;
     } else {

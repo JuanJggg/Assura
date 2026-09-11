@@ -141,14 +141,14 @@ function Login() {
         }
       `}</style>
 
-      <div style={{
+      <div className="auth-wrapper" style={{
         display: "flex", height: "100vh", width: "100%", fontFamily: "'Inter',sans-serif",
         background: "linear-gradient(135deg, #fff 60%, #FEF2F2 100%)",
         opacity: mounted ? 1 : 0,
         transition: "opacity 0.35s ease"
       }}>
         {/* Panel izquierdo decorativo con burbujas */}
-        <div className="left-panel-anim" style={{
+        <div className="left-panel-anim auth-panel-left" style={{
           flex: 1, background: "linear-gradient(150deg, #DC2626 0%, #7F1D1D 100%)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: 48, position: "relative", overflow: "hidden"
@@ -203,7 +203,7 @@ function Login() {
         </div>
 
         {/* Panel derecho: formulario */}
-        <div className="right-panel-anim" style={{
+        <div className="right-panel-anim auth-panel-right" style={{
           width: 460, flexShrink: 0, display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", padding: "48px 48px",
           background: "white"

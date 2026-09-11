@@ -102,14 +102,14 @@ function ForgotPassword() {
         }
       `}</style>
 
-      <div style={{
+      <div className="auth-wrapper" style={{
         display: "flex", height: "100vh", fontFamily: "'Inter',sans-serif",
         background: "linear-gradient(135deg,#fff 60%,#FEF2F2 100%)",
         opacity: mounted ? 1 : 0,
         transition: "opacity 0.35s ease"
       }}>
         {/* Panel rojo con burbujas */}
-        <div className="fp-left" style={{
+        <div className="fp-left auth-panel-left" style={{
           width: 380, flexShrink: 0,
           background: "linear-gradient(150deg,#DC2626 0%,#7F1D1D 100%)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
@@ -148,7 +148,7 @@ function ForgotPassword() {
         </div>
 
         {/* Panel formulario */}
-        <div className="fp-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px" }}>
+        <div className="fp-right auth-panel-right" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px" }}>
           <div style={{ width: "100%", maxWidth: 380 }}>
             <h2 style={{ margin: "0 0 6px", fontSize: 26, fontWeight: 800, color: "#111827" }}>Recuperar contraseña</h2>
             <p style={{ margin: "0 0 32px", fontSize: 14, color: "#6B7280" }}>Ingresa tu correo y te enviaremos las instrucciones</p>

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css';
+import './responsive.css';
 import Dashboard from './App.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';

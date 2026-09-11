@@ -2,11 +2,33 @@ import React, { useState, useRef, useEffect } from "react";
 import API from "../../services/api";
 import pusher from "../../services/pusher";
 
+// ── Helper: URL completa ──────────────────────────────────────
+const getFileUrl = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  return `${base}${path}`;
+};
+
+const isImageUrl = (url) => /\.(jpe?g|png|gif|webp)$/i.test(url);
+
 // ─── SVG Icons ───────────────────────────────────────────────
 const SendIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
     <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     <path d="M22 2L15 22 11 13 2 9l20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const PaperclipIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const XIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" width="14" height="14">
+    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
   </svg>
 );
 
@@ -45,20 +67,99 @@ function Avatar({ name, size = 44, fontSize = 17 }) {
   );
 }
 
+// ── Componente de mensaje con soporte de archivos ─────────────
+function MessageBubble({ msg, isSender, chatName }) {
+  const hasFile = msg.archivo_url || msg.tipo_contenido === 'imagen' || msg.tipo_contenido === 'pdf';
+  const fileUrl = getFileUrl(msg.archivo_url);
+  const isImg = msg.tipo_contenido === 'imagen' || (msg.archivo_url && isImageUrl(msg.archivo_url));
+
+  return (
+    <div style={{
+      display: "flex",
+      justifyContent: isSender ? "flex-end" : "flex-start",
+      marginBottom: 6
+    }}>
+      {!isSender && (
+        <div style={{ marginRight: 8, alignSelf: "flex-end", marginBottom: 2 }}>
+          <Avatar name={chatName} size={28} fontSize={11} />
+        </div>
+      )}
+      <div style={{ maxWidth: "65%" }}>
+        <div style={{
+          padding: hasFile && !msg.contenido ? "6px" : "10px 14px",
+          borderRadius: isSender ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
+          background: isSender ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "white",
+          color: isSender ? "white" : "#111827",
+          boxShadow: isSender ? "0 2px 10px rgba(220,38,38,0.2)" : "0 1px 4px rgba(0,0,0,0.07)",
+          border: isSender ? "none" : "1px solid #F3F4F6",
+          overflow: "hidden"
+        }}>
+          {hasFile && fileUrl && (
+            isImg ? (
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: "block" }}>
+                <img src={fileUrl} alt="Imagen" loading="lazy" style={{
+                  maxWidth: "100%", maxHeight: 240, borderRadius: msg.contenido ? "8px 8px 0 0" : 12,
+                  objectFit: "cover", display: "block",
+                  marginBottom: msg.contenido ? 8 : 0
+                }} />
+              </a>
+            ) : (
+              <a href={fileUrl} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 12px", borderRadius: 8, marginBottom: msg.contenido ? 8 : 0,
+                  background: isSender ? "rgba(255,255,255,0.15)" : "#FEF2F2",
+                  color: isSender ? "white" : "#DC2626",
+                  textDecoration: "none", fontSize: 12, fontWeight: 600
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" strokeWidth="1.5"/>
+                  <polyline points="14 2 14 8 20 8" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+                {msg.archivo_url?.split('/').pop() || "Documento PDF"}
+              </a>
+            )
+          )}
+          {msg.contenido && (
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, wordBreak: "break-word" }}>{msg.contenido}</p>
+          )}
+        </div>
+        <p style={{
+          margin: "3px 4px 0",
+          fontSize: 10, color: "#9CA3AF",
+          textAlign: isSender ? "right" : "left"
+        }}>
+          {msg.fecha_envio
+            ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true })
+            : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 // ─── Main Component ───────────────────────────────────────────
 function Chatbot() {
   const [selectedChatId, _setSelectedChatId] = useState(null);
-  // Wrapper para siempre normalizar el ID a Number
   const setSelectedChatId = (id) => _setSelectedChatId(id != null ? Number(id) : null);
   const [message, setMessage] = useState("");
   const [chats, setChats] = useState([]);
   const [messages, setMessages] = useState([]);
   const [search, setSearch] = useState("");
+  const [pendingFile, setPendingFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
   const messagesEndRef = useRef(null);
   const channelRef = useRef(null);
   const notificationChannelRef = useRef(null);
   const selectedChatIdRef = useRef(selectedChatId);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   const userId = usuario.id;
@@ -71,7 +172,6 @@ function Chatbot() {
     const channel = pusher.subscribe(`chat-${selectedChatId}`);
     channelRef.current = channel;
     channel.bind("nuevo-mensaje", (data) => {
-      // Comparar ID + tipo para evitar falsos positivos cuando asesor y estudiante tienen el mismo ID numérico
       const isMyMessage = Number(data.remitente_id) === Number(userId) && data.remitente_tipo === 'asesor';
       if (!isMyMessage) {
         setMessages(prev => {
@@ -109,7 +209,7 @@ function Chatbot() {
       const res = await API.get(`/chat/getConversacion/asesor/${userId}`);
       if (res.data.ok) {
         const conversaciones = res.data.conversaciones.map(conv => ({
-          id: Number(conv.id),  // Normalizar a Number
+          id: Number(conv.id),
           name: `${conv.estudiante_nombre} ${conv.estudiante_apellido}`,
           status: "Estudiante",
           lastMessage: conv.ultimo_mensaje || "Sin mensajes",
@@ -118,7 +218,6 @@ function Chatbot() {
             : ""
         }));
         setChats(conversaciones);
-        // Solo auto-seleccionar si no hay chat seleccionado actualmente
         if (conversaciones.length > 0 && !selectedChatIdRef.current) {
           setSelectedChatId(conversaciones[0].id);
         }
@@ -138,7 +237,6 @@ function Chatbot() {
     } catch {}
   };
 
-  // Scroll suave solo al nuevo mensaje
   const prevCountRef = useRef(0);
   useEffect(() => {
     if (messages.length > prevCountRef.current) {
@@ -149,28 +247,74 @@ function Chatbot() {
     prevCountRef.current = messages.length;
   }, [messages]);
 
+  // ── Seleccionar archivo ──
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      setToast({ type: "error", message: "El archivo excede 10 MB" });
+      return;
+    }
+    const isImg = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImg && !isPdf) {
+      setToast({ type: "error", message: "Solo imágenes y PDF permitidos" });
+      return;
+    }
+    setPendingFile(file);
+    setFilePreview(isImg ? URL.createObjectURL(file) : null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePendingFile = () => {
+    if (filePreview) URL.revokeObjectURL(filePreview);
+    setPendingFile(null);
+    setFilePreview(null);
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedChatId) return;
+    if ((!message.trim() && !pendingFile) || !selectedChatId) return;
     const text = message.trim();
+
     const tempMessage = {
       id_conversacion: selectedChatId,
       contenido: text,
       remitente_id: userId,
       remitente_tipo: "asesor",
-      fecha_envio: new Date().toISOString()
+      fecha_envio: new Date().toISOString(),
+      tipo_contenido: pendingFile ? (pendingFile.type === "application/pdf" ? "pdf" : "imagen") : "texto",
+      archivo_url: filePreview || (pendingFile ? "uploading..." : null)
     };
     setMessages(prev => [...prev, tempMessage]);
     setMessage("");
     if (inputRef.current) inputRef.current.style.height = "auto";
+
+    const fileToSend = pendingFile;
+    removePendingFile();
+    setUploading(true);
+
     try {
-      await API.post("/chat/mensajes", { chatId: selectedChatId, content: text, senderId: userId, senderType: "asesor" });
+      const fd = new FormData();
+      fd.append("chatId", selectedChatId);
+      fd.append("content", text);
+      fd.append("senderId", userId);
+      fd.append("senderType", "asesor");
+      if (fileToSend) fd.append("archivo", fileToSend);
+
+      await API.post("/chat/mensajes", fd, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      cargarMensajes(selectedChatId);
       setChats(prev => prev.map(c => c.id === selectedChatId
-        ? { ...c, lastMessage: text, lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
+        ? { ...c, lastMessage: text || "📎 Archivo", lastMessageTime: new Date().toLocaleString("es-ES", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }
         : c
       ));
     } catch (err) {
       console.error("Error al enviar:", err);
+      setToast({ type: "error", message: "Error al enviar mensaje" });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -186,7 +330,6 @@ function Chatbot() {
     c.lastMessage?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Agrupar mensajes por fecha
   const groupedMessages = messages.reduce((acc, msg, i) => {
     const date = new Date(msg.fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
     const prev = i > 0 ? new Date(messages[i-1].fecha_envio).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) : null;
@@ -209,43 +352,35 @@ function Chatbot() {
         .asesor-chat-item.active { background: #FFF5F5 !important; }
         .asesor-send-btn:not(:disabled):hover { background: linear-gradient(135deg,#B91C1C,#991B1B) !important; transform: scale(1.04); }
         .asesor-send-btn { transition: all 0.15s ease; }
+        .asesor-clip-btn { transition: all 0.15s; opacity: 0.5; }
+        .asesor-clip-btn:hover { opacity: 1; color: #DC2626 !important; }
       `}</style>
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden", background: "#F0F2F5", fontFamily: "'Inter',sans-serif" }}>
+      <div className="chat-layout" style={{ display: "flex", flex: 1, overflow: "hidden", background: "#F0F2F5", fontFamily: "'Inter',sans-serif" }}>
 
         {/* ── Lista de chats ── */}
-        <div style={{
+        <div className={`chat-sidebar${mobileShowChat ? " hidden-mobile" : ""}`} style={{
           width: 320, flexShrink: 0, background: "white",
           borderRight: "1px solid #E5E7EB",
           display: "flex", flexDirection: "column", overflow: "hidden"
         }}>
-          {/* Cabecera */}
           <div style={{ padding: "16px 16px 12px", borderBottom: "1px solid #F3F4F6", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#111827" }}>Chats con Estudiantes</h2>
             </div>
-            {/* Buscador */}
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}>
                 <SearchIcon />
               </div>
-              <input
-                type="text"
-                placeholder="Buscar estudiante..."
-                value={search}
+              <input type="text" placeholder="Buscar estudiante..." value={search}
                 onChange={e => setSearch(e.target.value)}
-                style={{
-                  width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10,
-                  border: "1.5px solid #E5E7EB", fontSize: 13, background: "#F9FAFB",
-                  outline: "none", fontFamily: "inherit", boxSizing: "border-box", color: "#374151"
-                }}
+                style={{ width: "100%", padding: "8px 12px 8px 34px", borderRadius: 10, border: "1.5px solid #E5E7EB", fontSize: 13, background: "#F9FAFB", outline: "none", fontFamily: "inherit", boxSizing: "border-box", color: "#374151" }}
                 onFocus={e => e.target.style.borderColor = "#DC2626"}
                 onBlur={e => e.target.style.borderColor = "#E5E7EB"}
               />
             </div>
           </div>
 
-          {/* Lista */}
           <div className="asesor-chat-list" style={{ flex: 1, overflowY: "auto" }}>
             {filteredChats.length === 0 ? (
               <div style={{ padding: 32, textAlign: "center" }}>
@@ -256,13 +391,11 @@ function Chatbot() {
               </div>
             ) : (
               filteredChats.map(chat => (
-                <div
-                  key={chat.id}
+                <div key={chat.id}
                   className={`asesor-chat-item${selectedChatId === chat.id ? " active" : ""}`}
-                  onClick={() => setSelectedChatId(chat.id)}
+                  onClick={() => { setSelectedChatId(chat.id); setMobileShowChat(true); }}
                   style={{
-                    padding: "12px 16px", cursor: "pointer",
-                    borderBottom: "1px solid #F3F4F6",
+                    padding: "12px 16px", cursor: "pointer", borderBottom: "1px solid #F3F4F6",
                     background: selectedChatId === chat.id ? "#FFF5F5" : "white",
                     transition: "background 0.15s",
                     borderLeft: selectedChatId === chat.id ? "3px solid #DC2626" : "3px solid transparent"
@@ -272,9 +405,7 @@ function Chatbot() {
                     <Avatar name={chat.name} size={46} fontSize={17} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6 }}>
-                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {chat.name}
-                        </p>
+                        <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chat.name}</p>
                         <span style={{ fontSize: 11, color: "#9CA3AF", flexShrink: 0 }}>{chat.lastMessageTime}</span>
                       </div>
                       <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -290,16 +421,28 @@ function Chatbot() {
         </div>
 
         {/* ── Ventana de chat ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div className={`chat-main-panel${mobileShowChat ? " active-mobile" : ""}`} style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {selectedChat ? (
             <>
-              {/* Header del chat */}
+              {/* Header */}
               <div style={{
                 padding: "12px 20px", background: "white",
                 borderBottom: "1px solid #E5E7EB",
                 display: "flex", alignItems: "center", gap: 12,
                 boxShadow: "0 1px 4px rgba(0,0,0,0.05)", flexShrink: 0
               }}>
+                <button
+                  className="chat-back-btn"
+                  onClick={() => setMobileShowChat(false)}
+                  style={{
+                    display: "none", alignItems: "center", justifyContent: "center",
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: "#F3F4F6", border: "none", cursor: "pointer",
+                    color: "#374151", flexShrink: 0
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </button>
                 <Avatar name={selectedChat.name} size={42} fontSize={16} />
                 <div>
                   <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#111827" }}>{selectedChat.name}</h3>
@@ -310,14 +453,7 @@ function Chatbot() {
               </div>
 
               {/* Mensajes */}
-              <div
-                className="asesor-chat-messages"
-                style={{
-                  flex: 1, overflowY: "auto",
-                  padding: "20px 24px",
-                  display: "flex", flexDirection: "column", gap: 2
-                }}
-              >
+              <div className="asesor-chat-messages" style={{ flex: 1, overflowY: "auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 2 }}>
                 {groupedMessages.map((item, idx) => {
                   if (item.type === "date") {
                     return (
@@ -330,65 +466,56 @@ function Chatbot() {
                   }
                   const msg = item.data;
                   const isSender = msg.remitente_id == userId && msg.remitente_tipo === 'asesor';
-                  return (
-                    <div key={idx} style={{
-                      display: "flex",
-                      justifyContent: isSender ? "flex-end" : "flex-start",
-                      marginBottom: 6
-                    }}>
-                      {!isSender && (
-                        <div style={{ marginRight: 8, alignSelf: "flex-end", marginBottom: 2 }}>
-                          <Avatar name={selectedChat.name} size={28} fontSize={11} />
-                        </div>
-                      )}
-                      <div style={{ maxWidth: "65%" }}>
-                        <div style={{
-                          padding: "10px 14px",
-                          borderRadius: isSender ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
-                          background: isSender
-                            ? "linear-gradient(135deg,#DC2626,#B91C1C)"
-                            : "white",
-                          color: isSender ? "white" : "#111827",
-                          boxShadow: isSender
-                            ? "0 2px 10px rgba(220,38,38,0.2)"
-                            : "0 1px 4px rgba(0,0,0,0.07)",
-                          border: isSender ? "none" : "1px solid #F3F4F6"
-                        }}>
-                          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, wordBreak: "break-word" }}>{msg.contenido}</p>
-                        </div>
-                        <p style={{
-                          margin: "3px 4px 0",
-                          fontSize: 10, color: "#9CA3AF",
-                          textAlign: isSender ? "right" : "left"
-                        }}>
-                          {msg.fecha_envio
-                            ? new Date(msg.fecha_envio).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true })
-                            : ""}
-                        </p>
-                      </div>
-                    </div>
-                  );
+                  return <MessageBubble key={idx} msg={msg} isSender={isSender} chatName={selectedChat.name} />;
                 })}
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* File preview */}
+              {pendingFile && (
+                <div style={{ padding: "8px 20px 0", background: "white", borderTop: "1px solid #F3F4F6" }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 12px", background: "#F9FAFB", borderRadius: 10, border: "1px solid #E5E7EB" }}>
+                    {filePreview ? (
+                      <img src={filePreview} alt="" style={{ width: 40, height: 40, objectFit: "cover", borderRadius: 6 }} />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: 6, background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="#DC2626" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" stroke="#DC2626" strokeWidth="1.5"/></svg>
+                      </div>
+                    )}
+                    <span style={{ fontSize: 12, color: "#374151", maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pendingFile.name}</span>
+                    <button onClick={removePendingFile} style={{ background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", padding: 2, display: "flex" }}>
+                      <XIcon />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Input */}
-              <form
-                onSubmit={handleSendMessage}
+              <form onSubmit={handleSendMessage}
                 style={{
                   padding: "12px 20px", background: "white",
-                  borderTop: "1px solid #E5E7EB",
-                  display: "flex", alignItems: "flex-end", gap: 10,
+                  borderTop: pendingFile ? "none" : "1px solid #E5E7EB",
+                  display: "flex", alignItems: "flex-end", gap: 8,
                   boxShadow: "0 -2px 8px rgba(0,0,0,0.04)", flexShrink: 0
                 }}
               >
-                <textarea
-                  ref={inputRef}
-                  value={message}
-                  onChange={handleInputChange}
+                <input ref={fileInputRef} type="file" accept="image/*,.pdf" onChange={handleFileSelect} style={{ display: "none" }} />
+                <button type="button" className="asesor-clip-btn" onClick={() => fileInputRef.current?.click()}
+                  disabled={!!pendingFile || uploading}
+                  style={{
+                    width: 40, height: 40, borderRadius: "50%", border: "1px solid #E5E7EB",
+                    background: "white", cursor: pendingFile || uploading ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#9CA3AF", flexShrink: 0, padding: 0
+                  }}
+                  title="Adjuntar archivo"
+                >
+                  <PaperclipIcon />
+                </button>
+
+                <textarea ref={inputRef} value={message} onChange={handleInputChange}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(e); } }}
-                  placeholder="Escribe un mensaje..."
-                  rows={1}
+                  placeholder="Escribe un mensaje..." rows={1} disabled={uploading}
                   style={{
                     flex: 1, padding: "11px 16px", borderRadius: 22,
                     border: "1.5px solid #E5E7EB", fontSize: 14,
@@ -400,21 +527,18 @@ function Chatbot() {
                   onFocus={e => e.target.style.borderColor = "#DC2626"}
                   onBlur={e => e.target.style.borderColor = "#E5E7EB"}
                 />
-                <button
-                  type="submit"
-                  className="asesor-send-btn"
-                  disabled={!message.trim()}
+                <button type="submit" className="asesor-send-btn"
+                  disabled={(!message.trim() && !pendingFile) || uploading}
                   title="Enviar"
                   style={{
                     width: 44, height: 44, borderRadius: "50%", border: "none",
-                    background: message.trim()
-                      ? "linear-gradient(135deg,#DC2626,#B91C1C)"
-                      : "#E5E7EB",
-                    color: message.trim() ? "white" : "#9CA3AF",
-                    cursor: message.trim() ? "pointer" : "not-allowed",
+                    background: (message.trim() || pendingFile) && !uploading
+                      ? "linear-gradient(135deg,#DC2626,#B91C1C)" : "#E5E7EB",
+                    color: (message.trim() || pendingFile) && !uploading ? "white" : "#9CA3AF",
+                    cursor: (message.trim() || pendingFile) && !uploading ? "pointer" : "not-allowed",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0,
-                    boxShadow: message.trim() ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
+                    boxShadow: (message.trim() || pendingFile) && !uploading ? "0 2px 10px rgba(220,38,38,0.3)" : "none"
                   }}
                 >
                   <SendIcon />
@@ -422,11 +546,7 @@ function Chatbot() {
               </form>
             </>
           ) : (
-            <div style={{
-              flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              background: "#F0F2F5"
-            }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#F0F2F5" }}>
               <SelectChatIcon />
               <p style={{ color: "#9CA3AF", fontSize: 15, fontWeight: 500, margin: 0 }}>Selecciona una conversación</p>
               <p style={{ color: "#D1D5DB", fontSize: 13, marginTop: 6 }}>Los estudiantes aparecerán aquí cuando inicien un chat</p>
@@ -434,6 +554,23 @@ function Chatbot() {
           )}
         </div>
       </div>
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 100 }}>
+          <div style={{
+            padding: "12px 20px", borderRadius: 10,
+            background: toast.type === "error" ? "#FEF2F2" : "#F0FDF4",
+            border: `1px solid ${toast.type === "error" ? "#FECACA" : "#BBF7D0"}`,
+            color: toast.type === "error" ? "#DC2626" : "#16A34A",
+            fontSize: 13, fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            display: "flex", alignItems: "center", gap: 8
+          }}>
+            {toast.message}
+            <button onClick={() => setToast(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, display: "flex" }}>
+              <XIcon />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

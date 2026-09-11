@@ -15,7 +15,7 @@ function RegisterForum() {
                 <Menu/>
 
                 {/* Contenido principal */}
-                <main className="flex-1 bg-gray-100 p-8 overflow-y-auto">
+                <main className="flex-1 bg-gray-100 overflow-y-auto page-main" style={{ padding: "32px" }}>
                     <Form/>
                 </main>
             </div>
