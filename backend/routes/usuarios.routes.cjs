@@ -8,5 +8,6 @@ router.post('/updateUser', usuarioController.updateUsuario);
 router.post('/forgotPassword', usuarioController.forgotPassword);
 router.get('/validateToken/:token', usuarioController.validateToken);
 router.post('/resetPassword/:token', usuarioController.resetPassword);
+router.post('/google-login', usuarioController.googleLogin);
 
 module.exports = router;

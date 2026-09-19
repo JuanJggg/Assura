@@ -2,6 +2,7 @@ const pool = require("../config/db.cjs");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt");
+const axios = require("axios");
 const path = require("path");
 require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
 
@@ -315,3 +316,135 @@ exports.resetPassword = async (req, res) => {
       });
   }
 };
+
+// ─── Google Login ────────────────────────────────────────────
+exports.googleLogin = async (req, res) => {
+  const { credential, rol, carrera, codigo } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ ok: false, mensaje: "Token de Google requerido" });
+  }
+
+  try {
+    // Verificar el token con Google
+    const googleRes = await axios.get(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+    );
+
+    const { email, given_name, family_name, email_verified } = googleRes.data;
+
+    if (!email_verified || email_verified === "false") {
+      return res.status(401).json({ ok: false, mensaje: "El email de Google no está verificado" });
+    }
+
+    console.log("Google login para:", email, given_name, family_name);
+
+    // Buscar si el usuario ya existe
+    const result = await pool.query(
+      `
+        SELECT *
+        FROM (
+          SELECT email, id, 'Asesor' rol, nombres, apellidos, carrera,
+                 COALESCE(bloqueado, FALSE) AS bloqueado,
+                 COALESCE(es_admin, FALSE) AS es_admin
+          FROM public.asesor
+          UNION
+          SELECT email, id, 'Estudiante' rol, nombres, apellidos, carrera,
+                 COALESCE(bloqueado, FALSE) AS bloqueado,
+                 FALSE AS es_admin
+          FROM public.estudiante
+        ) AS usuarios
+        WHERE email = $1
+      `,
+      [email]
+    );
+
+    let usuario;
+
+    if (result.rowCount > 0) {
+      // Usuario existente
+      usuario = result.rows[0];
+
+      if (usuario.bloqueado) {
+        return res.status(403).json({ ok: false, mensaje: "Tu cuenta ha sido bloqueada. Contacta al administrador." });
+      }
+
+      const rolFinal = usuario.es_admin ? "Admin" : usuario.rol;
+
+      console.log("Google login exitoso (usuario existente):", email, "Rol:", rolFinal);
+
+      return res.json({
+        ok: true,
+        mensaje: "Inicio de sesión con Google exitoso",
+        usuario: {
+          id: usuario.id,
+          nombres: usuario.nombres,
+          apellidos: usuario.apellidos,
+          rol: rolFinal,
+          email: usuario.email,
+          carrera: usuario.carrera,
+        },
+      });
+    }
+
+    // Usuario nuevo: si no envió rol, pedir que elija
+    if (!rol) {
+      return res.json({
+        ok: false,
+        nuevoUsuario: true,
+        mensaje: "Selecciona tu rol para completar el registro",
+        google: {
+          email,
+          nombres: given_name || "",
+          apellidos: family_name || "",
+        },
+      });
+    }
+
+    // Registrar usuario nuevo con el rol elegido
+    const randomPassword = await bcrypt.hash(Math.random().toString(36) + Date.now(), 10);
+
+    let insertResult;
+
+    if (rol === "Asesor") {
+      insertResult = await pool.query(
+        `INSERT INTO public.asesor(nombres, apellidos, email, carrera, password)
+         VALUES($1, $2, $3, $4, $5) RETURNING id, nombres, apellidos, email, carrera`,
+        [given_name || "Usuario", family_name || "Google", email, carrera || null, randomPassword]
+      );
+    } else {
+      insertResult = await pool.query(
+        `INSERT INTO public.estudiante(codigo_estudiante, nombres, apellidos, email, carrera, password)
+         VALUES($1, $2, $3, $4, $5, $6) RETURNING id, nombres, apellidos, email, carrera`,
+        [codigo || null, given_name || "Usuario", family_name || "Google", email, carrera || null, randomPassword]
+      );
+    }
+
+    usuario = insertResult.rows[0];
+    const rolFinal = rol === "Asesor" ? "Asesor" : "Estudiante";
+    console.log("Google login exitoso (usuario nuevo registrado como " + rolFinal + "):", email);
+
+    return res.json({
+      ok: true,
+      mensaje: "Cuenta creada e inicio de sesión con Google exitoso",
+      usuario: {
+        id: usuario.id,
+        nombres: usuario.nombres,
+        apellidos: usuario.apellidos,
+        rol: rolFinal,
+        email: usuario.email,
+        carrera: usuario.carrera || null,
+      },
+    });
+
+  } catch (error) {
+    console.error("Error en Google login:", error.response?.data || error.message);
+
+    if (error.response?.status === 400) {
+      return res.status(401).json({ ok: false, mensaje: "Token de Google inválido o expirado" });
+    }
+
+    res.status(500).json({ ok: false, mensaje: "Error al iniciar sesión con Google" });
+  }
+};
+
